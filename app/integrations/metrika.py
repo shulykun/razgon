@@ -26,12 +26,10 @@ def _headers(token):
 
 
 def _base_metrics(goal_id=None):
-    """Core metrics: sessions + goal + ecommerce revenue if available."""
+    """Core metrics: sessions + goal if provided."""
     metrics = "ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds"
     if goal_id:
         metrics += f",ym:s:goal{goal_id}reaches,ym:s:goal{goal_id}conversionRate"
-    # Ecommerce revenue
-    metrics += ",ym:s:ecommerceRevenue"
     return metrics
 
 
