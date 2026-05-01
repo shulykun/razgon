@@ -1,5 +1,5 @@
-from app.integrations.metrika import get_traffic, get_sources, get_popular_pages
-from app.integrations.webmaster import get_search_queries, get_crawl_errors, get_indexing_status
+from app.integrations.metrika import collect_all_reports as collect_metrika
+from app.integrations.webmaster import collect_all_webmaster
 from app.agent.client import call_agent
 import json
 
@@ -26,12 +26,8 @@ SYSTEM_PROMPT = """Ты — SEO-аналитик и маркетолог. Про
 def collect_data(token, counter_id, host_id):
     """Collect all data from Metrika + Webmaster."""
     return {
-        "traffic": get_traffic(token, counter_id),
-        "sources": get_sources(token, counter_id),
-        "popular_pages": get_popular_pages(token, counter_id),
-        "search_queries": get_search_queries(token, host_id),
-        "crawl_errors": get_crawl_errors(token, host_id),
-        "indexing": get_indexing_status(token, host_id),
+        "metrika": collect_metrika(token, counter_id),
+        "webmaster": collect_all_webmaster(token, host_id) if host_id else {},
     }
 
 
