@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Razgon — AI-помощник для продвижения сайтов{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="hero text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold">Узнайте, как улучшить ваш сайт</h1>
+        <p class="lead mt-3">Подключите Яндекс Метрику и Webmaster — AI-агент проанализирует данные и даст рекомендации</p>
+        <a href="/auth/login" class="btn btn-light btn-lg mt-4 px-5">Начать</a>
+    </div>
+</section>
+
+<!-- How it works -->
+<section class="py-5">
+    <div class="container text-center">
+        <h2 class="mb-5">Как это работает</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-icon">🔗</div>
+                <h5>Подключите данные</h5>
+                <p class="text-muted">Авторизуйтесь через Яндекс — мы получим доступ к Метрике и Webmaster</p>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-icon">🤖</div>
+                <h5>AI анализирует</h5>
+                <p class="text-muted">Агент изучает трафик, поисковые запросы, ошибки и составляет отчёт</p>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-icon">💬</div>
+                <h5>Уточняйте в чате</h5>
+                <p class="text-muted">Задавайте вопросы, получайте конкретные рекомендации по улучшению</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- What you get -->
+<section class="py-5 bg-light">
+    <div class="container text-center">
+        <h2 class="mb-5">Что вы получите</h2>
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="feature-icon">📊</div>
+                <h5>Анализ трафика</h5>
+                <p class="text-muted">Откуда приходят посетители и что делают на сайте</p>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-icon">🔍</div>
+                <h5>SEO-видимость</h5>
+                <p class="text-muted">Поисковые запросы, позиции, индексация</p>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-icon">⚠️</div>
+                <h5>Ошибки</h5>
+                <p class="text-muted">Технические проблемы, которые мешают продвижению</p>
+            </div>
+            <div class="col-md-3">
+                <div class="feature-icon">🎯</div>
+                <h5>План действий</h5>
+                <p class="text-muted">Приоритетные шаги для роста трафика</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="py-5 text-center">
+    <div class="container">
+        <h3>Готовы улучшить свой сайт?</h3>
+        <a href="/auth/login" class="btn btn-primary btn-lg mt-3 px-5">Начать бесплатно</a>
+    </div>
+</section>
+{% endblock %}

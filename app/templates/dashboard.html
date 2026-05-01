@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Личный кабинет — Razgon{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Мои проекты</h2>
+            <a href="/setup/choose-site" class="btn btn-primary">+ Новый проект</a>
+        </div>
+
+        {% if projects %}
+        <div class="row g-4">
+            {% for project in projects %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ project.site_name }}</h5>
+                        <p class="card-text text-muted">Создан: {{ project.created_at.strftime('%d.%m.%Y') }}</p>
+                        <a href="/project/{{ project.id }}/report" class="btn btn-outline-primary">Открыть отчёт</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <p class="text-muted fs-5">У вас пока нет проектов</p>
+            <a href="/setup/choose-site" class="btn btn-primary btn-lg">Создать первый отчёт</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

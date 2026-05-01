@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Отчёт — Razgon{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="py-4">
+    <div class="container">
+        <a href="/dashboard" class="text-decoration-none mb-3 d-inline-block">← Назад к проектам</a>
+        <h2 class="mb-4">Отчёт по проекту</h2>
+
+        <!-- Charts -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h6>Трафик за 30 дней</h6>
+                        <canvas id="trafficChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6>Источники трафика</h6>
+                        <canvas id="sourcesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Report -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">🤖 AI-анализ</h5>
+                <div id="reportText">
+                    {% if report and report.ai_report_text %}
+                        {{ report.ai_report_text | replace('\n', '<br>') | safe }}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2 text-muted">Генерируем отчёт...</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">💬 Задайте вопрос агенту</h5>
+                <div class="chat-box mb-3" id="chatBox">
+                    <div class="text-center text-muted py-3">Начните диалог с AI-агентом</div>
+                </div>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="chatInput" placeholder="Напишите вопрос...">
+                    <button class="btn btn-primary" id="sendBtn">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const projectId = {{ project_id }};
+
+// Stub chart data — will be replaced with real data
+new Chart(document.getElementById('trafficChart'), {
+    type: 'line',
+    data: {
+        labels: ['1 Апр', '2 Апр', '3 Апр', '4 Апр', '5 Апр', '6 Апр', '7 Апр'],
+        datasets: [{
+            label: 'Визиты',
+            data: [120, 145, 98, 167, 134, 189, 155],
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102,126,234,0.1)',
+            fill: true, tension: 0.3
+        }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('sourcesChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Органика', 'Прямой', 'Переходы', 'Соцсети', 'Реклама'],
+        datasets: [{ data: [45, 20, 15, 12, 8], backgroundColor: ['#667eea','#764ba2','#f093fb','#4facfe','#43e97b'] }]
+    },
+    options: { responsive: true }
+});
+
+// Chat
+const chatBox = document.getElementById('chatBox');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+
+function addMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = `chat-msg ${role}`;
+    div.innerHTML = `<div class="bubble">${text}</div>`;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    addMessage('user', text);
+
+    try {
+        const resp = await fetch(`/api/projects/${projectId}/chat`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: text})
+        });
+        const data = await resp.json();
+        addMessage('assistant', data.text);
+    } catch (e) {
+        addMessage('assistant', 'Ошибка соединения с агентом');
+    }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+</script>
+{% endblock %}

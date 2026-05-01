@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Выбор сайта — Razgon{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container" style="max-width: 600px;">
+        <h2 class="mb-4">Выберите сайт для анализа</h2>
+        <p class="text-muted mb-4">Мы нашли ваши счётчики в Яндекс Метрике. Выберите сайт, чтобы создать отчёт.</p>
+
+        <div class="list-group mb-4">
+            {% for counter in counters %}
+            <label class="list-group-item d-flex align-items-center">
+                <input class="form-check-input me-3" type="radio" name="counter" value="{{ counter.id }}" {% if loop.first %}checked{% endif %}>
+                <div>
+                    <strong>{{ counter.name }}</strong><br>
+                    <small class="text-muted">{{ counter.site }}</small>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+
+        <button id="createBtn" class="btn btn-primary btn-lg w-100">Создать отчёт</button>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('createBtn').addEventListener('click', async () => {
+    const selected = document.querySelector('input[name="counter"]:checked');
+    if (!selected) return alert('Выберите сайт');
+
+    const btn = document.getElementById('createBtn');
+    btn.disabled = true;
+    btn.textContent = 'Создаю отчёт...';
+
+    try {
+        const resp = await fetch('/api/projects', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({counter_id: selected.value})
+        });
+        const data = await resp.json();
+        window.location.href = '/project/' + data.project_id + '/report';
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = 'Создать отчёт';
+    }
+});
+</script>
+{% endblock %}
