@@ -26,6 +26,13 @@
                 <input class="form-check-input me-3" type="radio" name="objective" value="audience">
                 <div><strong>👥 Понять портрет клиента</strong></div>
             </label>
+            <label class="list-group-item d-flex align-items-center">
+                <input class="form-check-input me-3" type="radio" name="objective" value="custom" id="customObjRadio">
+                <div class="w-100">
+                    <strong>✏️ Свой вариант</strong>
+                    <input type="text" class="form-control form-control-sm mt-2" id="customObjInput" placeholder="Опишите свою цель..." style="display:none">
+                </div>
+            </label>
         </div>
 
         <!-- Step 2: Site selection -->
@@ -64,7 +71,13 @@ document.getElementById('createBtn').addEventListener('click', async () => {
     if (!siteSelected) return alert('Выберите сайт');
     const goalSelected = document.querySelector('input[name="goal"]:checked');
     if (!goalSelected) return alert('Выберите главную цель');
-    const objective = document.querySelector('input[name="objective"]:checked').value;
+    const objectiveRadio = document.querySelector('input[name="objective"]:checked');
+    let objective = objectiveRadio.value;
+    if (objective === 'custom') {
+        const customText = document.getElementById('customObjInput').value.trim();
+        if (!customText) return alert('Опишите свою цель');
+        objective = customText;
+    }
 
     const btn = document.getElementById('createBtn');
     btn.disabled = true;
@@ -87,6 +100,14 @@ document.getElementById('createBtn').addEventListener('click', async () => {
         btn.disabled = false;
         btn.textContent = 'Создать отчёт';
     }
+});
+
+// Toggle custom objective input
+document.querySelectorAll('input[name="objective"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        const customInput = document.getElementById('customObjInput');
+        customInput.style.display = radio.value === 'custom' && radio.checked ? 'block' : 'none';
+    });
 });
 
 // Load goals when site is selected
