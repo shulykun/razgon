@@ -16,6 +16,7 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     site_name = db.Column(db.String(256), nullable=False)
+    objective = db.Column(db.String(32))  # sales, optimize, efficiency, audience
     metrika_counter_id = db.Column(db.String(64))
     webmaster_host_id = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

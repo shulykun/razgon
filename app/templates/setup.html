@@ -1,11 +1,36 @@
 {% extends "base.html" %}
-{% block title %}Выбор сайта — Razgon{% endblock %}
+{% block title %}Настройка проекта — Razgon{% endblock %}
 
 {% block content %}
 <section class="py-5">
     <div class="container" style="max-width: 600px;">
         <h2 class="mb-4">Настройка проекта</h2>
-        <p class="text-muted mb-2">Мы нашли ваши счётчики в Яндекс Метрике. Выберите сайт.</p>
+
+        <!-- Step 1: Objective -->
+        <h5 class="mb-3">Какая у вас цель?</h5>
+        <p class="text-muted mb-2">Это поможет агенту дать более точные рекомендации.</p>
+        <div class="list-group mb-4">
+            <label class="list-group-item d-flex align-items-center">
+                <input class="form-check-input me-3" type="radio" name="objective" value="sales" checked>
+                <div><strong>📈 Увеличить охват и продажи</strong></div>
+            </label>
+            <label class="list-group-item d-flex align-items-center">
+                <input class="form-check-input me-3" type="radio" name="objective" value="optimize">
+                <div><strong>💰 Сэкономить на рекламе, не потеряв доход</strong></div>
+            </label>
+            <label class="list-group-item d-flex align-items-center">
+                <input class="form-check-input me-3" type="radio" name="objective" value="efficiency">
+                <div><strong>⚡ Поднять эффективность сайта</strong></div>
+            </label>
+            <label class="list-group-item d-flex align-items-center">
+                <input class="form-check-input me-3" type="radio" name="objective" value="audience">
+                <div><strong>👥 Понять портрет клиента</strong></div>
+            </label>
+        </div>
+
+        <!-- Step 2: Site selection -->
+        <h5 class="mb-3">Выберите сайт</h5>
+        <p class="text-muted mb-2">Мы нашли ваши счётчики в Яндекс Метрике.</p>
 
         <div class="list-group mb-4">
             {% for counter in counters %}
@@ -19,6 +44,7 @@
             {% endfor %}
         </div>
 
+        <!-- Step 3: Goal selection -->
         <h5 class="mb-3">Выберите главную цель</h5>
         <p class="text-muted mb-2">Все отчёты будут строиться с учётом конверсии в эту цель.</p>
 
@@ -38,6 +64,7 @@ document.getElementById('createBtn').addEventListener('click', async () => {
     if (!siteSelected) return alert('Выберите сайт');
     const goalSelected = document.querySelector('input[name="goal"]:checked');
     if (!goalSelected) return alert('Выберите главную цель');
+    const objective = document.querySelector('input[name="objective"]:checked').value;
 
     const btn = document.getElementById('createBtn');
     btn.disabled = true;
@@ -49,7 +76,8 @@ document.getElementById('createBtn').addEventListener('click', async () => {
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 counter_id: siteSelected.value,
-                goal_id: goalSelected.value
+                goal_id: goalSelected.value,
+                objective: objective
             })
         });
         const data = await resp.json();

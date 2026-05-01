@@ -4,6 +4,13 @@ from app.agent.client import call_agent
 import json
 
 
+OBJECTIVE_PROMPTS = {
+    "sales": "Фокус на увеличении охвата и продаж. Рекомендуй каналы привлечения, точки роста, конверсионные улучшения.",
+    "optimize": "Фокус на оптимизации рекламных расходов. Найди перерасход, неэффективные каналы, предложения по снижению CAC.",
+    "efficiency": "Фокус на технической и контентной эффективности сайта. Найди проблемы с юзабилити, скоростью, контентом.",
+    "audience": "Фокус на понимании аудитории. Проанализируй географию, поведение, сегменты, паттерны посещаемости.",
+}
+
 SYSTEM_PROMPT = """Ты — SEO-аналитик и маркетолог. Проанализируй данные сайта и составь отчёт на русском языке.
 
 Включи разделы:
@@ -28,12 +35,17 @@ def collect_data(token, counter_id, host_id):
     }
 
 
-def generate_report(data):
+def generate_report(data, objective=None):
     """Send collected data to AI agent and get report."""
+    objective_hint = OBJECTIVE_PROMPTS.get(objective, "") if objective else ""
+    system_msg = SYSTEM_PROMPT
+    if objective_hint:
+        system_msg += f"\n\n{objective_hint}"
+
     user_message = f"Данные сайта для анализа:\n\n{json.dumps(data, ensure_ascii=False, indent=2)}"
     
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": system_msg},
         {"role": "user", "content": user_message},
     ]
     
