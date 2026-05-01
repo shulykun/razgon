@@ -4,19 +4,26 @@
 {% block content %}
 <section class="py-5">
     <div class="container" style="max-width: 600px;">
-        <h2 class="mb-4">Выберите сайт для анализа</h2>
-        <p class="text-muted mb-4">Мы нашли ваши счётчики в Яндекс Метрике. Выберите сайт, чтобы создать отчёт.</p>
+        <h2 class="mb-4">Настройка проекта</h2>
+        <p class="text-muted mb-2">Мы нашли ваши счётчики в Яндекс Метрике. Выберите сайт.</p>
 
         <div class="list-group mb-4">
             {% for counter in counters %}
             <label class="list-group-item d-flex align-items-center">
-                <input class="form-check-input me-3" type="radio" name="counter" value="{{ counter.id }}" {% if loop.first %}checked{% endif %}>
+                <input class="form-check-input me-3 site-radio" type="radio" name="counter" value="{{ counter.id }}" {% if loop.first %}checked{% endif %}>
                 <div>
                     <strong>{{ counter.name }}</strong><br>
                     <small class="text-muted">{{ counter.site }}</small>
                 </div>
             </label>
             {% endfor %}
+        </div>
+
+        <h5 class="mb-3">Выберите главную цель</h5>
+        <p class="text-muted mb-2">Все отчёты будут строиться с учётом конверсии в эту цель.</p>
+
+        <div class="list-group mb-4" id="goalsList">
+            <div class="list-group-item text-muted">Сначала выберите сайт...</div>
         </div>
 
         <button id="createBtn" class="btn btn-primary btn-lg w-100">Создать отчёт</button>
@@ -27,8 +34,10 @@
 {% block extra_scripts %}
 <script>
 document.getElementById('createBtn').addEventListener('click', async () => {
-    const selected = document.querySelector('input[name="counter"]:checked');
-    if (!selected) return alert('Выберите сайт');
+    const siteSelected = document.querySelector('input[name="counter"]:checked');
+    if (!siteSelected) return alert('Выберите сайт');
+    const goalSelected = document.querySelector('input[name="goal"]:checked');
+    if (!goalSelected) return alert('Выберите главную цель');
 
     const btn = document.getElementById('createBtn');
     btn.disabled = true;
@@ -38,7 +47,10 @@ document.getElementById('createBtn').addEventListener('click', async () => {
         const resp = await fetch('/api/projects', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({counter_id: selected.value})
+            body: JSON.stringify({
+                counter_id: siteSelected.value,
+                goal_id: goalSelected.value
+            })
         });
         const data = await resp.json();
         window.location.href = '/project/' + data.project_id + '/report';
@@ -48,5 +60,36 @@ document.getElementById('createBtn').addEventListener('click', async () => {
         btn.textContent = 'Создать отчёт';
     }
 });
+
+// Load goals when site is selected
+document.querySelectorAll('.site-radio').forEach(radio => {
+    radio.addEventListener('change', async (e) => {
+        const counterId = e.target.value;
+        const goalsList = document.getElementById('goalsList');
+        goalsList.innerHTML = '<div class="list-group-item text-muted">Загружаем цели...</div>';
+        try {
+            const resp = await fetch(`/api/counters/${counterId}/goals`);
+            const goals = await resp.json();
+            if (goals.length === 0) {
+                goalsList.innerHTML = '<div class="list-group-item text-muted">Цели не найдены</div>';
+                return;
+            }
+            goalsList.innerHTML = goals.map((g, i) => `
+                <label class="list-group-item d-flex align-items-center">
+                    <input class="form-check-input me-3" type="radio" name="goal" value="${g.id}" ${i === 0 ? 'checked' : ''}>
+                    <div>
+                        <strong>${g.name}</strong><br>
+                        <small class="text-muted">Тип: ${g.type}</small>
+                    </div>
+                </label>
+            `).join('');
+        } catch (e) {
+            goalsList.innerHTML = '<div class="list-group-item text-danger">Ошибка загрузки целей</div>';
+        }
+    });
+});
+
+// Trigger first site load
+document.querySelector('.site-radio:checked')?.dispatchEvent(new Event('change'));
 </script>
 {% endblock %}

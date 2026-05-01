@@ -1,12 +1,27 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 
 api_bp = Blueprint("api", __name__)
+
+
+@api_bp.route("/counters/<counter_id>/goals")
+def get_goals(counter_id):
+    """Get goals for a Metrika counter."""
+    token = session.get("oauth_token")
+    # Stub goals
+    goals = [
+        {"id": "12345", "name": "Покупка", "type": "action"},
+        {"id": "12346", "name": "Регистрация", "type": "action"},
+        {"id": "12347", "name": "Отправка формы", "type": "action"},
+    ]
+    return jsonify(goals)
 
 
 @api_bp.route("/projects", methods=["POST"])
 def create_project():
     """Create project from selected Metrika counter and generate report."""
     data = request.json
+    counter_id = data.get("counter_id")
+    goal_id = data.get("goal_id")
     # TODO: create Project, fetch data, call agent, save report
     return jsonify({"status": "ok", "project_id": 1})
 
