@@ -39,3 +39,18 @@ class ChatMessage(db.Model):
     role = db.Column(db.String(16), nullable=False)  # "user" or "assistant"
     text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class IntegrationLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=True)
+    source = db.Column(db.String(32), nullable=False)  # metrika, webmaster, agent
+    level = db.Column(db.String(16), nullable=False)  # info, warning, error
+    method = db.Column(db.String(64))  # report_search_queries, call_agent, etc.
+    request_url = db.Column(db.Text)
+    request_params = db.Column(db.Text)  # JSON
+    status_code = db.Column(db.Integer)
+    response_snippet = db.Column(db.Text)  # first 1000 chars of response or error
+    error_message = db.Column(db.Text)
+    duration_ms = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -2,8 +2,9 @@ import json
 import threading
 from flask import Blueprint, request, jsonify, session
 from app import db
-from app.models import Project, Report
+from app.models import Project, Report, IntegrationLog
 from app.services.report import collect_data, generate_report
+from app.services.logger import logged_request
 
 api_bp = Blueprint("api", __name__)
 
@@ -63,16 +64,26 @@ def _generate_report_async(project_id, report_id, token, counter_id, goal_id, ob
     app = create_app()
     with app.app_context():
         try:
-            data = collect_data(token, counter_id, host_id=None)
-            ai_text = generate_report(data, objective=objective)
-            report = db.session.get(Report, report_id)
-            report.raw_data = json.dumps(data, ensure_ascii=False)
-            report.ai_report_text = ai_text
-            db.session.commit()
+            with logged_request("metrika", "collect_all", project_id=project_id) as log:
+                data = collect_data(token, counter_id, host_id=None)
+                log.ok(request_url=f"metrika:{counter_id}", response_snippet="OK")
         except Exception as e:
-            report = db.session.get(Report, report_id)
-            report.ai_report_text = f"Ошибка генерации отчёта: {str(e)}"
-            db.session.commit()
+            with app.app_context():
+                log_integration = __import__("app.services.logger", fromlist=["log_integration"]).log_integration
+                log_integration("metrika", "collect_all", level="error", project_id=project_id, error_message=str(e))
+            data = {}
+
+        try:
+            with logged_request("agent", "generate_report", project_id=project_id) as log:
+                ai_text = generate_report(data, objective=objective)
+                log.ok(response_snippet=ai_text[:500] if ai_text else None)
+        except Exception as e:
+            ai_text = f"Ошибка генерации отчёта: {str(e)}"
+
+        report = db.session.get(Report, report_id)
+        report.raw_data = json.dumps(data, ensure_ascii=False) if data else None
+        report.ai_report_text = ai_text
+        db.session.commit()
 
 
 @api_bp.route("/projects/<int:project_id>/chat", methods=["POST"])
@@ -96,3 +107,19 @@ def project_status(project_id):
         "error": report.ai_report_text.startswith("Ошибка") if report.ai_report_text else False,
         "text": report.ai_report_text or "",
     })
+
+
+@api_bp.route("/projects/<int:project_id>/logs")
+def project_logs(project_id):
+    """Get integration logs for a project."""
+    logs = IntegrationLog.query.filter_by(project_id=project_id).order_by(IntegrationLog.created_at.desc()).limit(50).all()
+    return jsonify([{
+        "id": l.id,
+        "source": l.source,
+        "level": l.level,
+        "method": l.method,
+        "status_code": l.status_code,
+        "error_message": l.error_message,
+        "duration_ms": l.duration_ms,
+        "created_at": l.created_at.isoformat(),
+    } for l in logs])
