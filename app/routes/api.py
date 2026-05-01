@@ -1,4 +1,9 @@
+import json
+import threading
 from flask import Blueprint, request, jsonify, session
+from app import db
+from app.models import Project, Report
+from app.services.report import collect_data, generate_report
 
 api_bp = Blueprint("api", __name__)
 
@@ -19,12 +24,55 @@ def get_goals(counter_id):
 
 @api_bp.route("/projects", methods=["POST"])
 def create_project():
-    """Create project from selected Metrika counter and generate report."""
+    """Create project and start async report generation."""
     data = request.json
     counter_id = data.get("counter_id")
     goal_id = data.get("goal_id")
-    # TODO: create Project, fetch data, call agent, save report
-    return jsonify({"status": "ok", "project_id": 1})
+    objective = data.get("objective", "sales")
+
+    # TODO: get real site name from Metrika
+    site_name = f"Сайт #{counter_id}"
+    token = session.get("oauth_token", "")
+
+    project = Project(
+        site_name=site_name,
+        objective=objective,
+        metrika_counter_id=counter_id,
+        user_id=1,  # TODO: real user
+    )
+    db.session.add(project)
+    db.session.commit()
+
+    report = Report(project_id=project.id, ai_report_text="")
+    db.session.add(report)
+    db.session.commit()
+
+    # Start background report generation
+    thread = threading.Thread(
+        target=_generate_report_async,
+        args=(project.id, report.id, token, counter_id, goal_id, objective),
+    )
+    thread.start()
+
+    return jsonify({"status": "ok", "project_id": project.id})
+
+
+def _generate_report_async(project_id, report_id, token, counter_id, goal_id, objective):
+    """Background task: collect data + call agent + save report."""
+    from app import create_app
+    app = create_app()
+    with app.app_context():
+        try:
+            data = collect_data(token, counter_id, host_id=None)
+            ai_text = generate_report(data, objective=objective)
+            report = db.session.get(Report, report_id)
+            report.raw_data = json.dumps(data, ensure_ascii=False)
+            report.ai_report_text = ai_text
+            db.session.commit()
+        except Exception as e:
+            report = db.session.get(Report, report_id)
+            report.ai_report_text = f"Ошибка генерации отчёта: {str(e)}"
+            db.session.commit()
 
 
 @api_bp.route("/projects/<int:project_id>/chat", methods=["POST"])
@@ -34,3 +82,17 @@ def chat(project_id):
     message = data.get("message", "")
     # TODO: load context, call agent, save messages
     return jsonify({"role": "assistant", "text": f"Stub response to: {message}"})
+
+
+@api_bp.route("/projects/<int:project_id>/status")
+def project_status(project_id):
+    """Check if report is ready."""
+    report = Report.query.filter_by(project_id=project_id).order_by(Report.id.desc()).first()
+    if not report:
+        return jsonify({"ready": False})
+    ready = bool(report.ai_report_text and not report.ai_report_text.startswith("Ошибка"))
+    return jsonify({
+        "ready": ready,
+        "error": report.ai_report_text.startswith("Ошибка") if report.ai_report_text else False,
+        "text": report.ai_report_text or "",
+    })
