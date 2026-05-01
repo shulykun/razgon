@@ -15,7 +15,9 @@ Common metrics:
 
 All reports include sessions + main goal metrics.
 """
+STUB_MODE = True  # TODO: set False when real OAuth is configured
 import requests
+import random
 from datetime import datetime, timedelta
 
 METRIKA_STAT_URL = "https://api-metrika.yandex.net/stat/v1/data"
@@ -43,8 +45,24 @@ def _date_range(days=30):
     return start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
 
 
+def _stub_result(dimensions_count=1):
+    """Generate realistic stub data for testing."""
+    base = [random.randint(100, 5000), random.randint(50, 3000), round(random.uniform(20, 60), 1),
+            round(random.uniform(1.5, 5.0), 1), random.randint(30, 300)]
+    return {
+        "totals": base,
+        "rows": [
+            {"dimensions": [f"item_{i}" for _ in range(dimensions_count)], "metrics": [max(1, v - i * 50) for v in base]}
+            for i in range(5)
+        ],
+    }
+
+
 def _query(token, counter_id, metrics, dimensions, days=30, limit=20, sort=None, filters=None):
     """Execute a Metrika stat query."""
+    if STUB_MODE:
+        return _stub_result()
+
     start_date, end_date = _date_range(days)
     params = {
         "ids": counter_id,
@@ -180,6 +198,15 @@ def report_ecommerce_funnel(token, counter_id, days=30):
     Шаги: просмотр товара -> добавление в корзину -> начало оформления -> покупка
     """
     # Step-by-step: get visits at each funnel stage
+    if STUB_MODE:
+        return [
+            {"step": "Просмотр товара", "value": 10000, "conversion": 100.0},
+            {"step": "Просмотр карточки", "value": 4500, "conversion": 45.0},
+            {"step": "Добавление в корзину", "value": 1200, "conversion": 26.7},
+            {"step": "Начало оформления", "value": 600, "conversion": 50.0},
+            {"step": "Покупка", "value": 280, "conversion": 46.7},
+        ]
+
     steps = [
         ("Просмотр товара", "ym:s:productImpressions", "ym:s:productImpression"),
         ("Просмотр карточки", "ym:s:productClicks", "ym:s:productClick"),
