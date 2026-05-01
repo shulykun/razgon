@@ -26,10 +26,13 @@ def _headers(token):
 
 
 def _base_metrics(goal_id=None):
-    """Core metrics: sessions + goal if provided."""
+    """Core metrics: sessions + goal or ecommerce revenue."""
     metrics = "ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds"
     if goal_id:
-        metrics += f",ym:s:goal{goal_id}reaches,ym:s:goal{goal_id}conversionRate"
+        if goal_id == "ecommerce_revenue":
+            metrics += ",ym:s:ecommerceRevenue,ym:s:ecommercePurchasedProducts"
+        else:
+            metrics += f",ym:s:goal{goal_id}reaches,ym:s:goal{goal_id}conversionRate"
     return metrics
 
 
@@ -169,14 +172,60 @@ def report_cities(token, counter_id, goal_id=None, days=30, limit=20):
 
 
 # ==========================================
+# Report 6: E-commerce funnel (воронка покупок)
+# ==========================================
+def report_ecommerce_funnel(token, counter_id, days=30):
+    """
+    Воронка e-commerce: от карточки товара до завершения заказа.
+    Шаги: просмотр товара -> добавление в корзину -> начало оформления -> покупка
+    """
+    # Step-by-step: get visits at each funnel stage
+    steps = [
+        ("Просмотр товара", "ym:s:productImpressions", "ym:s:productImpression"),
+        ("Просмотр карточки", "ym:s:productClicks", "ym:s:productClick"),
+        ("Добавление в корзину", "ym:s:productAddedToCartSteps", "ym:s:productAddToCart"),
+        ("Начало оформления", "ym:s:productCheckoutStartedSteps", "ym:s:productBeginCheckout"),
+        ("Покупка", "ym:s:productPurchasedSteps", "ym:s:productPurchase"),
+    ]
+
+    start_date, end_date = _date_range(days)
+    funnel = []
+    for step_name, metric, dimension in steps:
+        params = {
+            "ids": counter_id,
+            "metrics": metric,
+            "date1": start_date,
+            "date2": end_date,
+            "lang": "ru",
+        }
+        resp = requests.get(METRIKA_STAT_URL, headers=_headers(token), params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        value = data.get("totals", [0])[0]
+        funnel.append({"step": step_name, "value": value})
+
+    # Calculate conversion rates between steps
+    for i in range(1, len(funnel)):
+        prev = funnel[i - 1]["value"]
+        curr = funnel[i]["value"]
+        funnel[i]["conversion"] = round(curr / prev * 100, 1) if prev else 0
+    funnel[0]["conversion"] = 100.0
+
+    return funnel
+
+
+# ==========================================
 # Collect all reports
 # ==========================================
 def collect_all_reports(token, counter_id, goal_id=None, days=30):
-    """Collect all 5 reports at once."""
-    return {
+    """Collect all reports at once."""
+    reports = {
         "entry_pages": report_entry_pages(token, counter_id, goal_id, days),
         "sources": report_sources(token, counter_id, goal_id, days),
         "keywords": report_keywords(token, counter_id, goal_id, days),
         "day_hour": report_day_hour(token, counter_id, goal_id, days),
         "cities": report_cities(token, counter_id, goal_id, days),
     }
+    # Always include ecommerce funnel
+    reports["ecommerce_funnel"] = report_ecommerce_funnel(token, counter_id, days)
+    return reports

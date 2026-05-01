@@ -7,8 +7,9 @@ api_bp = Blueprint("api", __name__)
 def get_goals(counter_id):
     """Get goals for a Metrika counter."""
     token = session.get("oauth_token")
-    # Stub goals
+    # Stub goals (including ecommerce revenue as an option)
     goals = [
+        {"id": "ecommerce_revenue", "name": "Доход от интернет-торговли", "type": "ecommerce"},
         {"id": "12345", "name": "Покупка", "type": "action"},
         {"id": "12346", "name": "Регистрация", "type": "action"},
         {"id": "12347", "name": "Отправка формы", "type": "action"},
