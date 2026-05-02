@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+{% block title %}Razgon — AI-помощник для продвижения сайтов{% endblock %}
+
+{% block extra_head %}
+<style>
+    :root {
+        --brand-dark: #0d0520;
+        --brand-purple: #7c3aed;
+        --brand-violet: #a855f7;
+        --brand-orange: #f97316;
+        --brand-pink: #ec4899;
+    }
+
+    /* Hero */
+    .hero-v3 {
+        position: relative;
+        background: var(--brand-dark);
+        overflow: hidden;
+        padding: 60px 0 80px;
+        text-align: center;
+        color: #fff;
+    }
+    .hero-v3::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 80% 60% at 20% 80%, rgba(124,58,237,0.25) 0%, transparent 70%),
+            radial-gradient(ellipse 60% 50% at 80% 20%, rgba(249,115,22,0.15) 0%, transparent 70%),
+            radial-gradient(ellipse 90% 40% at 50% 100%, rgba(168,85,247,0.2) 0%, transparent 60%);
+        animation: heroGlow 15s ease-in-out infinite alternate;
+    }
+    @keyframes heroGlow {
+        0% { opacity: 0.8; }
+        100% { opacity: 1; }
+    }
+    .hero-v3 .container { position: relative; z-index: 1; }
+    .hero-v3 .logo-wrap {
+        margin-bottom: 2rem;
+    }
+    .hero-v3 .logo-wrap img {
+        width: 120px;
+        height: 120px;
+        border-radius: 28px;
+        box-shadow: 0 12px 40px rgba(124,58,237,0.4);
+    }
+    .hero-v3 h1 {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.03em;
+        background: linear-gradient(135deg, #fff 30%, var(--brand-violet) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hero-v3 .tagline {
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--brand-orange);
+        margin-bottom: 1rem;
+    }
+    .hero-v3 .subtitle {
+        font-size: 1.1rem;
+        color: rgba(255,255,255,0.55);
+        max-width: 520px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.7;
+    }
+    .btn-razgon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: linear-gradient(135deg, var(--brand-purple), var(--brand-orange));
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.1rem;
+        padding: 0.9rem 2.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 30px rgba(124,58,237,0.35);
+        border: none;
+    }
+    .btn-razgon:hover {
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 45px rgba(124,58,237,0.5);
+    }
+    .hero-badges-v3 {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 2.5rem;
+        flex-wrap: wrap;
+    }
+    .badge-pill-v3 {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 50px;
+        padding: 0.45rem 1.1rem;
+        font-size: 0.82rem;
+        color: rgba(255,255,255,0.6);
+    }
+
+    /* How it works */
+    .how-v3 {
+        padding: 80px 0;
+        background: #faf8fc;
+    }
+    .how-v3 h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 3rem;
+        color: var(--brand-dark);
+    }
+    .step-v3 {
+        text-align: center;
+        padding: 1.5rem;
+    }
+    .step-v3 .num {
+        width: 60px; height: 60px;
+        border-radius: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 1.25rem;
+    }
+    .step-v3:nth-child(1) .num { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+    .step-v3:nth-child(2) .num { background: linear-gradient(135deg, #a855f7, #ec4899); }
+    .step-v3:nth-child(3) .num { background: linear-gradient(135deg, #f97316, #ef4444); }
+    .step-v3 h5 { font-weight: 600; color: var(--brand-dark); margin-bottom: 0.5rem; }
+    .step-v3 p { color: #6b5f7a; font-size: 0.9rem; line-height: 1.6; }
+
+    /* Features grid — dark */
+    .features-v3 {
+        padding: 80px 0;
+        background: var(--brand-dark);
+        color: #fff;
+    }
+    .features-v3 h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.75rem;
+    }
+    .features-v3 .sub {
+        text-align: center;
+        color: rgba(255,255,255,0.45);
+        margin-bottom: 3rem;
+    }
+    .feat-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 20px;
+        padding: 2rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    .feat-card:hover {
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(124,58,237,0.3);
+        transform: translateY(-4px);
+    }
+    .feat-card .emoji { font-size: 2.2rem; margin-bottom: 1rem; display: block; }
+    .feat-card h5 { font-weight: 600; margin-bottom: 0.4rem; font-size: 1.05rem; }
+    .feat-card p { color: rgba(255,255,255,0.45); font-size: 0.85rem; line-height: 1.5; }
+
+    /* Audience */
+    .audience-v3 {
+        padding: 80px 0;
+        background: #faf8fc;
+    }
+    .audience-v3 h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 3rem;
+        color: var(--brand-dark);
+    }
+    .aud-card {
+        background: #fff;
+        border: 1px solid rgba(124,58,237,0.08);
+        border-radius: 20px;
+        padding: 2rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 12px rgba(124,58,237,0.06);
+        height: 100%;
+    }
+    .aud-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(124,58,237,0.12);
+        border-color: rgba(124,58,237,0.2);
+    }
+    .aud-card .emoji { font-size: 2rem; margin-bottom: 1rem; display: block; }
+    .aud-card h5 { font-weight: 600; color: var(--brand-dark); margin-bottom: 0.5rem; }
+    .aud-card p { color: #6b5f7a; font-size: 0.9rem; line-height: 1.5; }
+
+    /* CTA */
+    .cta-v3 {
+        padding: 80px 0;
+        background: linear-gradient(135deg, var(--brand-dark) 0%, #1c0845 100%);
+        text-align: center;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .cta-v3::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 50% 120%, rgba(124,58,237,0.2) 0%, transparent 60%);
+    }
+    .cta-v3 .container { position: relative; z-index: 1; }
+    .cta-v3 h2 { font-size: 2rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .cta-v3 p { color: rgba(255,255,255,0.55); margin-bottom: 2rem; font-size: 1.1rem; }
+
+    @media (max-width: 768px) {
+        .hero-v3 h1 { font-size: 2.4rem; }
+        .hero-v3 .logo-wrap img { width: 80px; height: 80px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="hero-v3">
+    <div class="container">
+        <div class="logo-wrap">
+            <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Razgon">
+        </div>
+        <h1>Razgon</h1>
+        <p class="tagline">🚀 AI-продвижение сайтов</p>
+        <p class="subtitle">Подключите Яндекс Метрику и Вебмастер — AI-агент проанализирует данные и выдаст персональный план роста трафика</p>
+        <a href="/auth/login" class="btn-razgon">
+            Начать бесплатно <i class="bi bi-arrow-right"></i>
+        </a>
+        <div class="hero-badges-v3">
+            <span class="badge-pill-v3"><i class="bi bi-shield-check"></i> OAuth Яндекс</span>
+            <span class="badge-pill-v3"><i class="bi bi-robot"></i> AI-анализ</span>
+            <span class="badge-pill-v3"><i class="bi bi-clock-history"></i> Отчёт за минуту</span>
+            <span class="badge-pill-v3"><i class="bi bi-chat-dots"></i> Чат с агентом</span>
+        </div>
+    </div>
+</div>
+
+<!-- How it works -->
+<section class="how-v3">
+    <div class="container">
+        <h2>Как это работает</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="step-v3">
+                    <div class="num">1</div>
+                    <h5>Подключите Яндекс</h5>
+                    <p>Авторизуйтесь через Яндекс — мы запросим доступ только к чтению данных Метрики и Вебмастера</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="step-v3">
+                    <div class="num">2</div>
+                    <h5>Выберите сайт</h5>
+                    <p>Укажите счётчик — агент соберёт трафик, источники, поисковые запросы, ошибки индексации</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="step-v3">
+                    <div class="num">3</div>
+                    <h5>Получите план роста</h5>
+                    <p>AI выдаст отчёт с рекомендациями. Уточняйте детали в чате — агент помнит контекст</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features-v3">
+    <div class="container">
+        <h2>Что вы получите</h2>
+        <p class="sub">Агент анализирует десятки параметров и даёт конкретные рекомендации</p>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feat-card">
+                    <span class="emoji">📈</span>
+                    <h5>Точки роста трафика</h5>
+                    <p>Какие страницы и запросы тянут вверх, а где вы теряете посетителей</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feat-card">
+                    <span class="emoji">🔍</span>
+                    <h5>Ошибки индексации</h5>
+                    <p>Что мешает Яндексу увидеть ваши страницы — и как это исправить</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feat-card">
+                    <span class="emoji">🎯</span>
+                    <h5>Конверсии и цели</h5>
+                    <p>Поведение посетителей, воронка и рекомендации по улучшению</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feat-card">
+                    <span class="emoji">💬</span>
+                    <h5>Чат с AI-агентом</h5>
+                    <p>Задавайте вопросы — агент помнит контекст вашего сайта</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feat-card">
+                    <span class="emoji">📊</span>
+                    <h5>Визуализация</h5>
+                    <p>Графики трафика, источников, запросов из ваших реальных данных</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feat-card">
+                    <span class="emoji">🔄</span>
+                    <h5>Обновление отчёта</h5>
+                    <p>Перегенерируйте с актуальными данными в любой момент</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Audience -->
+<section class="audience-v3">
+    <div class="container">
+        <h2>Для кого</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="aud-card">
+                    <span class="emoji">🏪</span>
+                    <h5>Владельцы бизнеса</h5>
+                    <p>Поймите, почему трафик стоит — без найма SEO-специалиста</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="aud-card">
+                    <span class="emoji">🧑‍💻</span>
+                    <h5>Маркетологи</h5>
+                    <p>Быстрый аудит сайта клиента за минуту вместо часов ручной работы</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="aud-card">
+                    <span class="emoji">🛠</span>
+                    <h5>Разработчики</h5>
+                    <p>Найдите технические проблемы: ошибки индексации, 404, медленные страницы</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-v3">
+    <div class="container">
+        <h2>Запустите рост трафика 🚀</h2>
+        <p>Подключите Яндекс — получите первый AI-отчёт бесплатно</p>
+        <a href="/auth/login" class="btn-razgon">
+            Начать бесплатно <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+</section>
+{% endblock %}
