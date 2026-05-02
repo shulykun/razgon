@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, session
+from app.models import Project
+from app import db
 
 main_bp = Blueprint("main", __name__)
 
@@ -10,6 +12,9 @@ def promo():
 
 @main_bp.route("/dashboard")
 def dashboard():
-    # TODO: get user projects from DB
-    projects = []
+    user_id = session.get("user_id")
+    if user_id:
+        projects = Project.query.filter_by(user_id=user_id).order_by(Project.id.desc()).all()
+    else:
+        projects = []
     return render_template("dashboard.html", projects=projects)

@@ -3,6 +3,7 @@ from datetime import datetime
 
 
 class User(db.Model):
+    __table_args__ = {'sqlite_autoincrement': True}
     id = db.Column(db.Integer, primary_key=True)
     yandex_id = db.Column(db.String(64), unique=True, nullable=False)
     name = db.Column(db.String(128))
@@ -13,10 +14,13 @@ class User(db.Model):
 
 
 class Project(db.Model):
+    __table_args__ = {'sqlite_autoincrement': True}
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     site_name = db.Column(db.String(256), nullable=False)
     objective = db.Column(db.String(32))  # sales, optimize, efficiency, audience
+    metrika_goal_id = db.Column(db.String(64))
+    metrika_goal_name = db.Column(db.String(256))
     metrika_counter_id = db.Column(db.String(64))
     webmaster_host_id = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -25,6 +29,7 @@ class Project(db.Model):
 
 
 class Report(db.Model):
+    __table_args__ = {'sqlite_autoincrement': True}
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False)
     raw_data = db.Column(db.Text)  # JSON string with Metrika + Webmaster data
@@ -34,6 +39,7 @@ class Report(db.Model):
 
 
 class ChatMessage(db.Model):
+    __table_args__ = {'sqlite_autoincrement': True}
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False)
     role = db.Column(db.String(16), nullable=False)  # "user" or "assistant"
@@ -42,6 +48,7 @@ class ChatMessage(db.Model):
 
 
 class IntegrationLog(db.Model):
+    __table_args__ = {'sqlite_autoincrement': True}
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=True)
     source = db.Column(db.String(32), nullable=False)  # metrika, webmaster, agent

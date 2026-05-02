@@ -23,11 +23,11 @@ SYSTEM_PROMPT = """Ты — SEO-аналитик и маркетолог. Про
 Пиши конкретно, с цифрами. Избегай общих фраз."""
 
 
-def collect_data(token, counter_id, host_id):
+def collect_data(token, counter_id, goal_id=None, host_id=None):
     """Collect all data from Metrika + Webmaster."""
     return {
-        "metrika": collect_metrika(token, counter_id),
-        "webmaster": collect_all_webmaster(token, host_id) if host_id else {},
+        "metrika": collect_metrika(token, counter_id, goal_id),
+        "webmaster": collect_all_webmaster(token, host_id),
     }
 
 

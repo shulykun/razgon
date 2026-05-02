@@ -8,59 +8,136 @@
 {% block content %}
 <section class="py-4">
     <div class="container">
-        <a href="/dashboard" class="text-decoration-none mb-3 d-inline-block">← Назад к проектам</a>
-        <h2 class="mb-4">Отчёт по проекту</h2>
+        <a href="/dashboard" class="text-decoration-none mb-3 d-inline-block" style="color:var(--text-secondary)">← Назад к проектам</a>
+        <h2 class="mb-1" style="font-weight:700;">{{ project.site_name }}</h2>
+        <p class="mb-4" style="color:var(--text-secondary);font-size:0.9rem;">
+            {{ start_date }} — {{ end_date }} (30 дней) · Цель: {{ goal_name }} · Задача: {{ objective_label }}
+        </p>
 
-        <!-- Charts -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-body">
-                        <h6>Трафик за 30 дней</h6>
-                        <canvas id="trafficChart"></canvas>
-                    </div>
-                </div>
+        <!-- Main spinner -->
+        <div id="mainSpinner" class="text-center py-5">
+            <div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div>
+            <p class="mt-3" style="color:var(--text-secondary)">Собираем данные и генерируем отчёт...</p>
+            <p style="color:var(--text-secondary);font-size:0.85rem">Это может занять около минуты</p>
+            <div class="progress progress-custom mt-3 mx-auto" style="max-width:300px">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div>
             </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h6>Источники трафика</h6>
-                        <canvas id="sourcesChart"></canvas>
+        </div>
+
+        <!-- Content -->
+        <div id="mainContent" style="display:none;">
+
+        <!-- AI Report -->
+        <div class="rz-card mb-4">
+            <h6><i class="bi bi-robot me-2"></i>AI-анализ</h6>
+            <div id="reportContent" style="line-height:1.7;font-size:0.95rem;"></div>
+        </div>
+
+        <!-- Charts dropdown -->
+        <div class="accordion accordion-custom mb-4" id="chartsAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#chartsCollapse">
+                        <i class="bi bi-bar-chart me-2"></i>Графики
+                    </button>
+                </h2>
+                <div id="chartsCollapse" class="accordion-collapse collapse">
+                    <div class="accordion-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="rz-card"><h6>Трафик по дням недели</h6>
+                                    <canvas id="trafficDayChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="rz-card"><h6>Трафик по часам</h6>
+                                    <canvas id="trafficHourChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-0">
+                            <div class="col-md-6">
+                                <div class="rz-card"><h6>Источники трафика</h6>
+                                    <canvas id="sourcesChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="rz-card"><h6>Города</h6>
+                                    <canvas id="citiesChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-0">
+                            <div class="col-md-6">
+                                <div class="rz-card"><h6>Страницы входа</h6>
+                                    <canvas id="entryPagesChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="rz-card"><h6>Популярные страницы</h6>
+                                    <canvas id="popularPagesChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-0" id="funnelRow" style="display:none">
+                            <div class="col-12">
+                                <div class="rz-card"><h6>Воронка e-commerce</h6>
+                                    <canvas id="funnelChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-0">
+                            <div class="col-md-6">
+                                <div class="rz-card"><h6>Тип устройства</h6>
+                                    <canvas id="devicesChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="rz-card"><h6>Поисковые фразы</h6>
+                                    <canvas id="keywordsChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-0">
+                            <div class="col-12">
+                                <div class="rz-card"><h6>Демография: пол и возраст</h6>
+                                    <canvas id="demographicsChart" style="max-height:250px;"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- AI Report -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5 class="card-title mb-3">🤖 AI-анализ</h5>
-                <div id="reportText">
-                    <div id="loadingIndicator" class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-                        <p class="mt-3 text-muted">Собираем данные и генерируем отчёт...</p>
-                        <p class="text-muted small">Это может занять около минуты</p>
-                        <div class="progress mt-3 mx-auto" style="max-width: 300px; height: 6px;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
-                        </div>
+        <!-- Raw data dropdown -->
+        <div class="accordion accordion-custom mb-4" id="dataAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dataCollapse">
+                        <i class="bi bi-table me-2"></i>Данные для агента
+                    </button>
+                </h2>
+                <div id="dataCollapse" class="accordion-collapse collapse">
+                    <div class="accordion-body" id="rawDataContent">
+                        <div class="text-center py-3" style="color:var(--text-secondary)">Загрузка...</div>
                     </div>
-                    <div id="reportContent" style="display:none;"></div>
                 </div>
             </div>
         </div>
 
         <!-- Chat -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title mb-3">💬 Задайте вопрос агенту</h5>
-                <div class="chat-box mb-3" id="chatBox">
-                    <div class="text-center text-muted py-3">Начните диалог с AI-агентом</div>
-                </div>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="chatInput" placeholder="Напишите вопрос...">
-                    <button class="btn btn-primary" id="sendBtn">Отправить</button>
-                </div>
+        <div class="rz-card">
+            <h6><i class="bi bi-chat-dots me-2"></i>Задайте вопрос агенту</h6>
+            <div class="chat-box mb-3" id="chatBox">
+                <div class="text-center py-3" style="color:var(--text-secondary)">Начните диалог с AI-агентом</div>
             </div>
+            <div class="input-group">
+                <input type="text" class="form-control chat-input" id="chatInput" placeholder="Напишите вопрос...">
+                <button class="btn btn-accent" id="sendBtn">Отправить</button>
+            </div>
+        </div>
+
         </div>
     </div>
 </section>
@@ -70,51 +147,234 @@
 <script>
 const projectId = {{ project_id }};
 
-// Stub chart data — will be replaced with real data
-new Chart(document.getElementById('trafficChart'), {
-    type: 'line',
-    data: {
-        labels: ['1 Апр', '2 Апр', '3 Апр', '4 Апр', '5 Апр', '6 Апр', '7 Апр'],
-        datasets: [{
-            label: 'Визиты',
-            data: [120, 145, 98, 167, 134, 189, 155],
-            borderColor: '#667eea',
-            backgroundColor: 'rgba(102,126,234,0.1)',
-            fill: true, tension: 0.3
-        }]
-    },
-    options: { responsive: true, plugins: { legend: { display: false } } }
-});
+// Chart.js dark theme defaults
+Chart.defaults.color = '#6b7294';
+Chart.defaults.borderColor = 'rgba(0,0,0,0.06)';
 
-new Chart(document.getElementById('sourcesChart'), {
-    type: 'doughnut',
-    data: {
-        labels: ['Органика', 'Прямой', 'Переходы', 'Соцсети', 'Реклама'],
-        datasets: [{ data: [45, 20, 15, 12, 8], backgroundColor: ['#667eea','#764ba2','#f093fb','#4facfe','#43e97b'] }]
-    },
-    options: { responsive: true }
-});
-
-// Poll report status
-async function pollReport() {
+// Single poll: wait for agent
+async function pollUntilReady() {
     try {
         const resp = await fetch(`/api/projects/${projectId}/status`);
         const data = await resp.json();
-        if (data.ready) {
-            document.getElementById('loadingIndicator').style.display = 'none';
-            const content = document.getElementById('reportContent');
-            content.style.display = 'block';
-            content.innerHTML = data.text.replace(/\n/g, '<br>');
-        } else if (data.error) {
-            document.getElementById('loadingIndicator').innerHTML = `<p class="text-danger">${data.text}</p>`;
+        if (data.ready || data.error) {
+            document.getElementById('mainSpinner').style.display = 'none';
+            document.getElementById('mainContent').style.display = '';
+            if (data.ready) {
+                document.getElementById('reportContent').innerHTML = data.text.replace(/\n/g, '<br>');
+            } else {
+                document.getElementById('reportContent').innerHTML = `<p style="color:var(--danger)">${data.text}</p>`;
+            }
+            loadCharts();
+            loadRawData();
         } else {
-            setTimeout(pollReport, 3000);
+            setTimeout(pollUntilReady, 3000);
         }
     } catch (e) {
-        setTimeout(pollReport, 5000);
+        setTimeout(pollUntilReady, 5000);
     }
 }
-pollReport();
+pollUntilReady();
+
+const accent = '#7c6aef';
+const accentSoft = 'rgba(124,106,239,0.15)';
+const palette = ['#7c6aef','#a78bfa','#6c5ce7','#4facfe','#34d399','#f87171','#fbbf24','#38bdf8'];
+
+async function loadCharts() {
+    try {
+        const resp = await fetch(`/api/projects/${projectId}/chart-data`);
+        const data = await resp.json();
+        if (!data || Object.keys(data).length === 0) return;
+
+        const barOpts = (horizontal) => ({
+            responsive: true, maintainAspectRatio: true,
+            indexAxis: horizontal ? 'y' : 'x',
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { color: 'rgba(0,0,0,0.04)' } } }
+        });
+
+        if (data.traffic_by_day) {
+            new Chart(document.getElementById('trafficDayChart'), {
+                type: 'bar',
+                data: { labels: data.traffic_by_day.labels, datasets: [{ label: 'Визиты', data: data.traffic_by_day.values, backgroundColor: accent, borderRadius: 6 }] },
+                options: barOpts(false)
+            });
+        }
+        if (data.traffic_by_hour) {
+            new Chart(document.getElementById('trafficHourChart'), {
+                type: 'line',
+                data: { labels: data.traffic_by_hour.labels, datasets: [{ label: 'Визиты', data: data.traffic_by_hour.values, borderColor: accent, backgroundColor: accentSoft, fill: true, tension: 0.4, pointRadius: 2 }] },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(0,0,0,0.04)' } }, y: { grid: { color: 'rgba(0,0,0,0.04)' } } } }
+            });
+        }
+        if (data.sources) {
+            new Chart(document.getElementById('sourcesChart'), {
+                type: 'doughnut',
+                data: { labels: data.sources.labels, datasets: [{ data: data.sources.values, backgroundColor: palette, borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: true }
+            });
+        }
+        if (data.cities) {
+            new Chart(document.getElementById('citiesChart'), {
+                type: 'bar',
+                data: { labels: data.cities.labels, datasets: [{ label: 'Визиты', data: data.cities.values, backgroundColor: '#4facfe', borderRadius: 4 }] },
+                options: barOpts(true)
+            });
+        }
+        if (data.entry_pages) {
+            new Chart(document.getElementById('entryPagesChart'), {
+                type: 'bar',
+                data: { labels: data.entry_pages.labels, datasets: [{ label: 'Визиты', data: data.entry_pages.values, backgroundColor: '#34d399', borderRadius: 4 }] },
+                options: barOpts(true)
+            });
+        }
+        if (data.popular_pages) {
+            new Chart(document.getElementById('popularPagesChart'), {
+                type: 'bar',
+                data: { labels: data.popular_pages.labels, datasets: [{ label: 'Просмотры', data: data.popular_pages.values, backgroundColor: '#38bdf8', borderRadius: 4 }] },
+                options: barOpts(true)
+            });
+        }
+        if (data.funnel) {
+            document.getElementById('funnelRow').style.display = '';
+            new Chart(document.getElementById('funnelChart'), {
+                type: 'bar',
+                data: { labels: data.funnel.labels, datasets: [{ label: 'Шаги', data: data.funnel.values, backgroundColor: palette, borderRadius: 6 }] },
+                options: barOpts(false)
+            });
+        }
+        if (data.devices) {
+            new Chart(document.getElementById('devicesChart'), {
+                type: 'doughnut',
+                data: { labels: data.devices.labels, datasets: [{ data: data.devices.values, backgroundColor: palette, borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: true }
+            });
+        }
+        if (data.keywords) {
+            new Chart(document.getElementById('keywordsChart'), {
+                type: 'bar',
+                data: { labels: data.keywords.labels, datasets: [{ label: 'Визиты', data: data.keywords.values, backgroundColor: '#f59e0b', borderRadius: 4 }] },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#6b7294' }, grid: { color: 'rgba(0,0,0,0.04)' } }, y: { ticks: { color: '#6b7294', font: { size: 11 } }, grid: { display: false } } }
+                }
+            });
+        }
+        if (data.demographics) {
+            new Chart(document.getElementById('demographicsChart'), {
+                type: 'doughnut',
+                data: { labels: data.demographics.labels, datasets: [{ data: data.demographics.values, backgroundColor: palette, borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: true }
+            });
+        }
+    } catch (e) { console.error('Charts error', e); }
+}
+
+// Raw data tables
+async function loadRawData() {
+    try {
+        const resp = await fetch(`/api/projects/${projectId}/raw-data`);
+        const data = await resp.json();
+        const container = document.getElementById('rawDataContent');
+        if (!data) { container.innerHTML = '<p style="color:var(--text-secondary)">Нет данных</p>'; return; }
+
+        let html = '';
+        const sections = {
+            'entry_pages': 'Страницы входа',
+            'popular_pages': 'Популярные страницы',
+            'sources': 'Источники трафика',
+            'day_hour': 'Дни и часы',
+            'cities': 'Города',
+            'keywords': 'Поисковые фразы',
+            'ecommerce_funnel': 'Воронка e-commerce',
+            'devices': 'Тип устройства',
+            'demographics': 'Демография',
+        };
+
+        const metrika = data.metrika || {};
+        for (const [key, title] of Object.entries(sections)) {
+            const section = metrika[key];
+            if (!section) continue;
+
+            if (key === 'day_hour') {
+                for (const [subKey, subTitle] of [['by_day', 'По дням'], ['by_hour', 'По часам']]) {
+                    const sub = section[subKey];
+                    if (sub && sub.rows) {
+                        html += buildTable(subTitle, sub.rows, ['Параметр', 'Визиты', 'Польз.', 'Отказы%', 'Глубина', 'Ср.длит.(с)', 'Цель', 'Конверсия%']);
+                    }
+                }
+            } else if (key === 'demographics') {
+                for (const [subKey, subTitle] of [['by_sex', 'По полу'], ['by_age', 'По возрасту']]) {
+                    const sub = section[subKey];
+                    if (sub && sub.rows) {
+                        html += buildTable(subTitle, sub.rows, ['Параметр', 'Визиты', 'Польз.', 'Отказы%', 'Глубина', 'Ср.длит.(с)', 'Цель', 'Конверсия%']);
+                    }
+                }
+            } else if (Array.isArray(section)) {
+                html += `<h6 class="mt-3" style="color:var(--text-primary)">${title}</h6>`;
+                html += '<div class="data-table"><table class="table table-sm table-light-custom"><thead><tr><th>Шаг</th><th>Значение</th><th>Конверсия</th></tr></thead><tbody>';
+                for (const s of section) {
+                    html += `<tr><td>${s.step || ''}</td><td>${s.value}</td><td>${s.conversion || ''}%</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+            } else if (section.rows) {
+                const headers = (key === 'popular_pages')
+                    ? ['Страница', 'Просмотры']
+                    : ['Параметр', 'Визиты', 'Польз.', 'Отказы%', 'Глубина', 'Ср.длит.(с)', 'Цель', 'Конверсия%'];
+                html += buildTable(title, section.rows, headers);
+            }
+        }
+
+        // Webmaster
+        if (data.webmaster) {
+            const wm = data.webmaster;
+            if (wm.summary) {
+                html += `<h6 class="mt-3" style="color:var(--text-primary)">Вебмастер: сводка</h6>`;
+                html += '<table class="table table-sm table-light-custom"><tbody>';
+                html += `<tr><td>SQI (Индекс качества)</td><td><strong>${wm.summary.sqi}</strong></td></tr>`;
+                html += `<tr><td>Страниц в индексе</td><td>${wm.summary.indexed}</td></tr>`;
+                html += `<tr><td>Исключённых</td><td>${wm.summary.excluded}</td></tr>`;
+                html += '</tbody></table>';
+            }
+            if (wm.diagnostics && wm.diagnostics.problems && wm.diagnostics.problems.length > 0) {
+                html += `<h6 class="mt-3" style="color:var(--text-primary)">Вебмастер: проблемы</h6>`;
+                html += '<div class="data-table"><table class="table table-sm table-light-custom"><thead><tr><th>Проблема</th><th>Серьёзность</th></tr></thead><tbody>';
+                for (const p of wm.diagnostics.problems) {
+                    html += `<tr><td>${p.code}</td><td>${p.severity}</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+            }
+            if (wm.search_queries && wm.search_queries.queries && wm.search_queries.queries.length > 0) {
+                html += `<h6 class="mt-3" style="color:var(--text-primary)">Вебмастер: поисковые запросы</h6>`;
+                if (wm.search_queries.date_from) {
+                    html += `<p style="color:var(--text-secondary);font-size:0.8rem">${wm.search_queries.date_from} — ${wm.search_queries.date_to}</p>`;
+                }
+                html += '<div class="data-table"><table class="table table-sm table-light-custom"><thead><tr><th>Запрос</th></tr></thead><tbody>';
+                for (const q of wm.search_queries.queries.slice(0, 30)) {
+                    html += `<tr><td>${q.query}</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+            }
+        }
+
+        container.innerHTML = html || '<p style="color:var(--text-secondary)">Нет данных</p>';
+    } catch (e) { console.error('Raw data error', e); }
+}
+
+function buildTable(title, rows, headers) {
+    let html = `<h6 class="mt-3" style="color:var(--text-primary)">${title}</h6>`;
+    html += '<div class="data-table"><table class="table table-sm table-light-custom"><thead><tr>';
+    for (const h of headers) html += `<th>${h}</th>`;
+    html += '</tr></thead><tbody>';
+    for (const r of rows) {
+        html += '<tr>';
+        for (const d of r.dimensions) html += `<td>${d}</td>`;
+        for (const m of r.metrics) html += `<td>${typeof m === 'number' ? (Number.isInteger(m) ? m : m.toFixed(1)) : m}</td>`;
+        html += '</tr>';
+    }
+    html += '</tbody></table></div>';
+    return html;
+}
 
 // Chat
 const chatBox = document.getElementById('chatBox');
@@ -134,7 +394,6 @@ async function sendMessage() {
     if (!text) return;
     chatInput.value = '';
     addMessage('user', text);
-
     try {
         const resp = await fetch(`/api/projects/${projectId}/chat`, {
             method: 'POST',

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Выбор сайта — Razgon{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container" style="max-width:600px;">
+        {% include "setup_progress.html" %}
+        <h2 class="mb-3" style="font-weight:700;">Выберите сайт</h2>
+        <p class="mb-4" style="color:var(--text-secondary);font-size:0.9rem;">Мы нашли ваши счётчики в Яндекс Метрике.</p>
+
+        <div class="d-flex flex-column gap-2 mb-4">
+            {% for counter in counters %}
+            <label class="rz-radio-item d-flex align-items-center">
+                <input class="form-check-input me-3 site-radio" type="radio" name="counter" value="{{ counter.id }}" {% if loop.first %}checked{% endif %}>
+                <div>
+                    <strong>{{ counter.name }}</strong><br>
+                    <small style="color:var(--text-secondary)">{{ counter.site }}</small>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+
+        <button id="nextBtn" class="btn btn-accent w-100" style="padding:0.75rem;">Далее →</button>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('nextBtn').addEventListener('click', () => {
+    const r = document.querySelector('input[name="counter"]:checked');
+    if (!r) return alert('Выберите сайт');
+    fetch('/setup/api/counter', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({counter_id: r.value})
+    }).then(() => window.location.href = '/setup/goal');
+});
+</script>
+{% endblock %}

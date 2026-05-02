@@ -2,73 +2,45 @@
 {% block title %}Razgon — AI-помощник для продвижения сайтов{% endblock %}
 
 {% block content %}
-<!-- Hero -->
-<section class="hero text-center">
+<div class="hero-section">
     <div class="container">
-        <h1 class="display-4 fw-bold">Узнайте, как улучшить ваш сайт</h1>
-        <p class="lead mt-3">Подключите Яндекс Метрику и Webmaster — AI-агент проанализирует данные и даст рекомендации</p>
-        <a href="/auth/login" class="btn btn-light btn-lg mt-4 px-5">Начать</a>
+        <h1>Razgon</h1>
+        <p>AI-агент анализирует данные Яндекс Метрики и Вебмастера, выдаёт персональный отчёт с рекомендациями по продвижению вашего сайта</p>
+        <a href="/auth/login" class="btn btn-accent btn-lg">Начать бесплатно</a>
     </div>
-</section>
+</div>
 
-<!-- How it works -->
 <section class="py-5">
-    <div class="container text-center">
-        <h2 class="mb-5">Как это работает</h2>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="feature-icon"><i class="bi bi-link-45deg"></i></div>
-                <h5>Подключите данные</h5>
-                <p class="text-muted">Авторизуйтесь через Яндекс — мы получим доступ к Метрике и Webmaster</p>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-icon"><i class="bi bi-robot"></i></div>
-                <h5>AI анализирует</h5>
-                <p class="text-muted">Агент изучает трафик, поисковые запросы, ошибки и составляет отчёт</p>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-icon"><i class="bi bi-chat-dots"></i></div>
-                <h5>Уточняйте в чате</h5>
-                <p class="text-muted">Задавайте вопросы, получайте конкретные рекомендации по улучшению</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- What you get -->
-<section class="py-5 bg-light">
-    <div class="container text-center">
-        <h2 class="mb-5">Что вы получите</h2>
-        <div class="row g-4">
-            <div class="col-md-3">
-                <div class="feature-icon"><i class="bi bi-bar-chart-line"></i></div>
-                <h5>Анализ трафика</h5>
-                <p class="text-muted">Откуда приходят посетители и что делают на сайте</p>
-            </div>
-            <div class="col-md-3">
-                <div class="feature-icon"><i class="bi bi-search"></i></div>
-                <h5>SEO-видимость</h5>
-                <p class="text-muted">Поисковые запросы, позиции, индексация</p>
-            </div>
-            <div class="col-md-3">
-                <div class="feature-icon"><i class="bi bi-exclamation-triangle"></i></div>
-                <h5>Ошибки</h5>
-                <p class="text-muted">Технические проблемы, которые мешают продвижению</p>
-            </div>
-            <div class="col-md-3">
-                <div class="feature-icon"><i class="bi bi-bullseye"></i></div>
-                <h5>План действий</h5>
-                <p class="text-muted">Приоритетные шаги для роста трафика</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- CTA -->
-<section class="py-5 text-center">
     <div class="container">
-        <h3>Готовы улучшить свой сайт?</h3>
-        <a href="/auth/login" class="btn btn-primary btn-lg mt-3 px-5">Начать бесплатно</a>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <span class="feature-icon"><i class="bi bi-graph-up-arrow" style="color:var(--accent)"></i></span>
+                    <h5 style="font-weight:600;margin-bottom:0.5rem;">Рост трафика</h5>
+                    <p style="color:var(--text-secondary);font-size:0.9rem;">AI находит точки роста и даёт конкретные рекомендации</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <span class="feature-icon"><i class="bi bi-speedometer2" style="color:var(--accent)"></i></span>
+                    <h5 style="font-weight:600;margin-bottom:0.5rem;">Эффективность</h5>
+                    <p style="color:var(--text-secondary);font-size:0.9rem;">Анализ источников, конверсий, поведения посетителей</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <span class="feature-icon"><i class="bi bi-chat-dots-fill" style="color:var(--accent)"></i></span>
+                    <h5 style="font-weight:600;margin-bottom:0.5rem;">Чат с агентом</h5>
+                    <p style="color:var(--text-secondary);font-size:0.9rem;">Уточняйте детали, задавайте вопросы, получайте советы</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-4 mb-5">
+    <div class="container text-center" style="color:var(--text-secondary)">
+        <p style="font-size:0.85rem;">Подключите Яндекс Метрику и Вебмастер — получите отчёт за минуту</p>
     </div>
 </section>
 {% endblock %}

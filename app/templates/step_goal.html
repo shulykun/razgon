@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Выбор цели — Razgon{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container" style="max-width:600px;">
+        {% include "setup_progress.html" %}
+        <h2 class="mb-3" style="font-weight:700;">Выберите главную цель</h2>
+        <p class="mb-4" style="color:var(--text-secondary);font-size:0.9rem;">Все отчёты будут строиться с учётом конверсии в эту цель.</p>
+
+        <div class="d-flex flex-column gap-2 mb-4" id="goalsList">
+            <div class="rz-card text-center py-3" style="color:var(--text-secondary)">
+                <div class="spinner-border rz-spinner spinner-border-sm me-2"></div>
+                Загружаем цели...
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="/setup/site" class="btn btn-ghost" style="padding:0.65rem 1.2rem;">← Назад</a>
+            <button id="nextBtn" class="btn btn-accent flex-grow-1" disabled>Выберите цель →</button>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+fetch('/setup/api/state')
+    .then(r => r.json())
+    .then(data => {
+        if (data.counter_id) loadGoals(data.counter_id);
+    });
+
+function loadGoals(cid) {
+    fetch(`/api/counters/${cid}/goals`)
+        .then(r => r.json())
+        .then(goals => {
+            const list = document.getElementById('goalsList');
+            if (!goals.length) { list.innerHTML = '<div class="rz-card py-3" style="color:var(--text-secondary)">Цели не найдены</div>'; return; }
+            list.innerHTML = goals.map((g, i) => `
+                <label class="rz-radio-item d-flex align-items-center">
+                    <input class="form-check-input me-3" type="radio" name="goal" value="${g.id}" ${i === 0 ? 'checked' : ''}>
+                    <div>
+                        <strong>${g.name}</strong><br>
+                        <small style="color:var(--text-secondary)">Тип: ${g.type}</small>
+                    </div>
+                </label>
+            `).join('');
+            document.getElementById('nextBtn').disabled = false;
+            document.getElementById('nextBtn').textContent = 'Далее →';
+        })
+        .catch(() => {
+            document.getElementById('goalsList').innerHTML = '<div class="rz-card py-3" style="color:var(--danger)">Ошибка загрузки целей</div>';
+        });
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+    const g = document.querySelector('input[name="goal"]:checked');
+    if (!g) return alert('Выберите цель');
+    fetch('/setup/api/goal', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({goal_id: g.value})
+    }).then(() => window.location.href = '/setup/objective');
+});
+</script>
+{% endblock %}

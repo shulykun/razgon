@@ -1,0 +1,20 @@
+<!-- Reusable progress bar for 3-step setup -->
+{% set step_labels = ['Сайт', 'Конверсия', 'Цель'] %}
+<div class="d-flex justify-content-center mb-4">
+    <div class="d-flex align-items-center">
+        {% for label in step_labels %}
+        <div class="d-flex align-items-center">
+            <div class="d-flex flex-column align-items-center" style="width:100px;">
+                <div class="step-circle
+                    {% if loop.index < step %}step-done{% elif loop.index == step %}step-active{% else %}step-pending{% endif %}">
+                    {% if loop.index < step %}✓{% else %}{{ loop.index }}{% endif %}
+                </div>
+                <small class="mt-1 {{ 'fw-bold' if loop.index == step else '' }}" style="color:{{ 'var(--text-primary)' if loop.index == step else 'var(--text-secondary)' }}">{{ label }}</small>
+            </div>
+            {% if not loop.last %}
+            <div class="step-line {{ 'step-line-done' if loop.index < step else 'step-line-pending' }}"></div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>

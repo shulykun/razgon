@@ -15,7 +15,7 @@ Common metrics:
 
 All reports include sessions + main goal metrics.
 """
-STUB_MODE = True  # TODO: set False when real OAuth is configured
+STUB_MODE = False  # Real Metrika API enabled
 import requests
 import random
 from datetime import datetime, timedelta
@@ -133,16 +133,13 @@ def report_keywords(token, counter_id, goal_id=None, days=30, limit=30):
     Поисковые фразы и UTM-terms.
     Показывает по каким запросам находят сайт.
     """
-    # Search phrases from organic
-    organic = _query(
+    return _query(
         token, counter_id,
         metrics=_base_metrics(goal_id),
         dimensions="ym:s:searchPhrase",
         days=days, limit=limit,
         sort="-ym:s:visits",
-        filters="ym:s:sourceEngine=='organic'",
     )
-    return organic
 
 
 # ==========================================
@@ -242,17 +239,91 @@ def report_ecommerce_funnel(token, counter_id, days=30):
 
 
 # ==========================================
+# Report 7: Popular content (популярное содержание)
+# ==========================================
+def report_popular_pages(token, counter_id, goal_id=None, days=30, limit=20):
+    """
+    Популярные страницы — самые просматриваемые страницы сайта.
+    Показывает какой контент интересует аудиторию.
+    """
+    if STUB_MODE:
+        return _stub_result()
+
+    start_date, end_date = _date_range(days)
+    params = {
+        "ids": counter_id,
+        "metrics": "ym:pv:pageviews",
+        "dimensions": "ym:pv:URL",
+        "date1": start_date,
+        "date2": end_date,
+        "limit": limit,
+        "lang": "ru",
+        "sort": "-ym:pv:pageviews",
+    }
+    resp = requests.get(METRIKA_STAT_URL, headers=_headers(token), params=params)
+    resp.raise_for_status()
+    data = resp.json()
+    result = {"totals": data.get("totals", []), "rows": []}
+    for row in data.get("data", []):
+        dims = [d.get("name", d.get("id", "")) for d in row.get("dimensions", [])]
+        result["rows"].append({"dimensions": dims, "metrics": row.get("metrics", [])})
+    return result
+
+
+# ==========================================
+# Report 8: Device type
+# ==========================================
+def report_devices(token, counter_id, goal_id=None, days=30):
+    """
+    Тип устройства: десктоп, мобильный, планшет.
+    """
+    return _query(
+        token, counter_id,
+        metrics=_base_metrics(goal_id),
+        dimensions="ym:s:deviceCategory",
+        days=days, limit=10,
+        sort="-ym:s:visits",
+    )
+
+
+# ==========================================
+# Report 9: Demographics (sex + age)
+# ==========================================
+def report_demographics(token, counter_id, goal_id=None, days=30):
+    """
+    Демография: пол и возраст посетителей.
+    """
+    by_sex = _query(
+        token, counter_id,
+        metrics=_base_metrics(goal_id),
+        dimensions="ym:s:gender",
+        days=days, limit=10,
+        sort="-ym:s:visits",
+    )
+    by_age = _query(
+        token, counter_id,
+        metrics=_base_metrics(goal_id),
+        dimensions="ym:s:ageInterval",
+        days=days, limit=10,
+        sort="-ym:s:visits",
+    )
+    return {"by_sex": by_sex, "by_age": by_age}
+
+
+# ==========================================
 # Collect all reports
 # ==========================================
 def collect_all_reports(token, counter_id, goal_id=None, days=30):
     """Collect all reports at once."""
     reports = {
         "entry_pages": report_entry_pages(token, counter_id, goal_id, days),
+        "popular_pages": report_popular_pages(token, counter_id, goal_id, days),
         "sources": report_sources(token, counter_id, goal_id, days),
         "keywords": report_keywords(token, counter_id, goal_id, days),
         "day_hour": report_day_hour(token, counter_id, goal_id, days),
         "cities": report_cities(token, counter_id, goal_id, days),
+        "devices": report_devices(token, counter_id, goal_id, days),
+        "demographics": report_demographics(token, counter_id, goal_id, days),
     }
-    # Always include ecommerce funnel
     reports["ecommerce_funnel"] = report_ecommerce_funnel(token, counter_id, days)
     return reports

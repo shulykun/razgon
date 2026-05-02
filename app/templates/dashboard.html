@@ -1,23 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Личный кабинет — Razgon{% endblock %}
+{% block title %}Кабинет — Razgon{% endblock %}
 
 {% block content %}
 <section class="py-5">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Мои проекты</h2>
-            <a href="/setup/choose-site" class="btn btn-primary">+ Новый проект</a>
+            <h2 style="font-weight:700;">Мои проекты</h2>
+            <a href="/setup/site" class="btn btn-accent"><i class="bi bi-plus-lg me-1"></i>Новый проект</a>
         </div>
 
         {% if projects %}
         <div class="row g-4">
             {% for project in projects %}
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ project.site_name }}</h5>
-                        <p class="card-text text-muted">Создан: {{ project.created_at.strftime('%d.%m.%Y') }}</p>
-                        <a href="/project/{{ project.id }}/report" class="btn btn-outline-primary">Открыть отчёт</a>
+                <div class="project-card h-100">
+                    <h5 style="font-weight:600;margin-bottom:0.5rem;">{{ project.site_name }}</h5>
+                    <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:1rem;">
+                        {{ project.created_at.strftime('%d.%m.%Y') }}
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a href="/project/{{ project.id }}/report" class="btn btn-accent btn-sm">Открыть отчёт</a>
+                        <button class="btn btn-danger-ghost btn-sm" onclick="deleteProject({{ project.id }}, this)">
+                            <i class="bi bi-trash3"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -25,10 +30,24 @@
         </div>
         {% else %}
         <div class="text-center py-5">
-            <p class="text-muted fs-5">У вас пока нет проектов</p>
-            <a href="/setup/choose-site" class="btn btn-primary btn-lg">Создать первый отчёт</a>
+            <p style="color:var(--text-secondary);font-size:1.1rem;">У вас пока нет проектов</p>
+            <a href="/setup/site" class="btn btn-accent btn-lg">Создать первый отчёт</a>
         </div>
         {% endif %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function deleteProject(id, btn) {
+    if (!confirm('Удалить проект?')) return;
+    try {
+        await fetch(`/api/projects/${id}`, {method: 'DELETE'});
+        btn.closest('.col-md-6').remove();
+    } catch (e) {
+        alert('Ошибка удаления');
+    }
+}
+</script>
 {% endblock %}

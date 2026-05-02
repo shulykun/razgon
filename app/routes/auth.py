@@ -1,5 +1,8 @@
 import requests
+from urllib.parse import quote
 from flask import Blueprint, redirect, url_for, session, request, render_template, current_app
+from app import db
+from app.models import User
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -11,11 +14,11 @@ YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
 def login():
     client_id = current_app.config["YANDEX_CLIENT_ID"]
     redirect_uri = current_app.config["YANDEX_REDIRECT_URI"]
-    scope = "metrica:read webmaster:read"
+    scope = quote("login:email webmaster:hostinfo webmaster:verify metrika:read")
     url = (
         f"{YANDEX_AUTH_URL}?response_type=code"
         f"&client_id={client_id}"
-        f"&redirect_uri={redirect_uri}"
+        f"&redirect_uri={quote(redirect_uri, safe='')}"
         f"&scope={scope}"
     )
     return redirect(url)
@@ -54,9 +57,18 @@ def callback():
     session["yandex_id"] = str(user_info.get("id"))
     session["user_name"] = user_info.get("real_name", user_info.get("login", "User"))
 
-    # TODO: create/update User in DB
+    # Create/update User in DB
+    user = User.query.filter_by(yandex_id=str(user_info.get("id"))).first()
+    if not user:
+        user = User(yandex_id=str(user_info.get("id")), name=session["user_name"])
+        db.session.add(user)
+    else:
+        user.name = session["user_name"]
+    user.oauth_token = access_token
+    db.session.commit()
+    session["user_id"] = user.id
 
-    return redirect(url_for("setup.choose_site"))
+    return redirect(url_for("setup.step_site"))
 
 
 @auth_bp.route("/logout")
