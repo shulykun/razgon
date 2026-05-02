@@ -7,7 +7,7 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def promo():
-    return render_template("promo_v3.html")
+    return render_template("promo_v4.html")
 
 
 @main_bp.route("/dashboard")
