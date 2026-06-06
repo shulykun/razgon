@@ -8,6 +8,7 @@ from app.models import Project, Report, IntegrationLog, ChatMessage
 from app.services.report import collect_data
 from app.services.logger import logged_request
 from app.agent.client import send_project_init, send_chat_message
+from app.agent.deepseek_agent import generate_report as ds_generate_report, chat_with_context
 
 logger = logging.getLogger(__name__)
 
@@ -447,12 +448,23 @@ def chat(project_id):
     db.session.add(user_msg)
     db.session.commit()
 
-    # Send to agent (async, response comes via callback)
+    # Try DeepSeek directly, fallback to external agent
+    report = Report.query.filter_by(project_id=project_id).order_by(Report.id.desc()).first()
+    raw_data = json.loads(report.raw_data) if report and report.raw_data else None
+
     try:
-        send_chat_message(project_id, message)
-        return jsonify({"status": "ok", "message": "Вопрос отправлен агенту. Ответ появится в чате."})
+        response_text = chat_with_context(project_id, message, data=raw_data)
+        assistant_msg = ChatMessage(project_id=project_id, role="assistant", text=response_text)
+        db.session.add(assistant_msg)
+        db.session.commit()
+        return jsonify({"status": "ok", "response": response_text})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"DeepSeek chat failed, fallback to external: {e}")
+        try:
+            send_chat_message(project_id, message)
+            return jsonify({"status": "ok", "message": "Вопрос отправлен агенту. Ответ появится в чате."})
+        except Exception as e2:
+            return jsonify({"error": str(e2)}), 500
 
 
 @api_bp.route("/projects/<int:project_id>/retry", methods=["POST"])
@@ -491,17 +503,29 @@ def retry_report(project_id):
     report.ai_report_text = ""
     db.session.commit()
 
-    try:
-        send_project_init(
-            project_id=project_id,
-            site_name=project.site_name,
-            reports=reports,
-            goal=goal_text,
-            yandex=yandex,
-        )
-        return jsonify({"status": "ok"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # Try DeepSeek first, fallback to external agent
+    def _run():
+        try:
+            text = ds_generate_report(data, objective=project.objective, goal=goal_text)
+            report.ai_report_text = text
+            db.session.commit()
+            logger.info(f"DeepSeek report saved for project {project_id}")
+        except Exception as e:
+            logger.error(f"DeepSeek failed, falling back to external agent: {e}")
+            try:
+                send_project_init(
+                    project_id=project_id,
+                    site_name=project.site_name,
+                    reports=reports,
+                    goal=goal_text,
+                    yandex=yandex,
+                )
+            except Exception as e2:
+                report.ai_report_text = f"Ошибка: {str(e2)}"
+                db.session.commit()
+
+    threading.Thread(target=_run, daemon=True).start()
+    return jsonify({"status": "ok"})
 
 
 @api_bp.route("/projects/<int:project_id>/status")
