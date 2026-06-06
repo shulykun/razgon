@@ -6,9 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-VSEGPT_URL = "https://api.vsegpt.ru/v1/chat/completions"
-VSEGPT_KEY = "sk-or-vv-939a6b781fd0efdc74100b09d24d6e2a92575c8cfa793a9d0041779693b56260"
-MODEL = "deepseek/deepseek-chat"
+API_URL = "https://api.deepseek.com/chat/completions"
+API_KEY = "sk-6ff99adb03a144a0996d4ecc8b349a6a"
+MODEL = "deepseek-chat"
 
 SYSTEM_PROMPT = """Ты — SEO-аналитик и маркетолог. Проанализируй данные сайта и составь отчёт на русском языке.
 
@@ -111,7 +111,7 @@ def _call_deepseek(messages, tools=None, max_tokens=4000):
     """Call DeepSeek API via vsegpt.ru."""
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {VSEGPT_KEY}",
+        "Authorization": f"Bearer {API_KEY}",
     }
     payload = {
         "model": MODEL,
@@ -123,7 +123,7 @@ def _call_deepseek(messages, tools=None, max_tokens=4000):
         payload["tools"] = tools
         payload["tool_choice"] = "auto"
 
-    resp = requests.post(VSEGPT_URL, headers=headers, json=payload, timeout=120)
+    resp = requests.post(API_URL, headers=headers, json=payload, timeout=120)
     resp.raise_for_status()
     return resp.json()
 

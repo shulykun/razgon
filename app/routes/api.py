@@ -504,25 +504,34 @@ def retry_report(project_id):
     db.session.commit()
 
     # Try DeepSeek first, fallback to external agent
+    from app import create_app
+    _objective = project.objective
+    _site_name = project.site_name
+    _project_id = project_id
+
     def _run():
-        try:
-            text = ds_generate_report(data, objective=project.objective, goal=goal_text)
-            report.ai_report_text = text
-            db.session.commit()
-            logger.info(f"DeepSeek report saved for project {project_id}")
-        except Exception as e:
-            logger.error(f"DeepSeek failed, falling back to external agent: {e}")
+        app = create_app()
+        with app.app_context():
             try:
-                send_project_init(
-                    project_id=project_id,
-                    site_name=project.site_name,
-                    reports=reports,
-                    goal=goal_text,
-                    yandex=yandex,
-                )
-            except Exception as e2:
-                report.ai_report_text = f"Ошибка: {str(e2)}"
+                text = ds_generate_report(data, objective=_objective, goal=goal_text)
+                report_obj = Report.query.filter_by(project_id=_project_id).order_by(Report.id.desc()).first()
+                report_obj.ai_report_text = text
                 db.session.commit()
+                logger.info(f"DeepSeek report saved for project {_project_id}")
+            except Exception as e:
+                logger.error(f"DeepSeek failed, falling back to external agent: {e}")
+                try:
+                    send_project_init(
+                        project_id=_project_id,
+                        site_name=_site_name,
+                        reports=reports,
+                        goal=goal_text,
+                        yandex=yandex,
+                    )
+                except Exception as e2:
+                    report_obj = Report.query.filter_by(project_id=_project_id).order_by(Report.id.desc()).first()
+                    report_obj.ai_report_text = f"Ошибка: {str(e2)}"
+                    db.session.commit()
 
     threading.Thread(target=_run, daemon=True).start()
     return jsonify({"status": "ok"})
