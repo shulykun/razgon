@@ -162,7 +162,7 @@ async function pollUntilReady() {
             if (data.ready) {
                 document.getElementById('reportContent').innerHTML = data.text.replace(/\n/g, '<br>');
             } else {
-                document.getElementById('reportContent').innerHTML = `<p style="color:var(--danger)">${data.text}</p>`;
+                document.getElementById('reportContent').innerHTML = `<p style="color:var(--danger)">${data.text}</p><button onclick="retryReport()" class="btn btn-primary mt-3">\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c</button>`;
             }
             loadCharts();
             loadRawData();
@@ -171,6 +171,16 @@ async function pollUntilReady() {
         }
     } catch (e) {
         setTimeout(pollUntilReady, 5000);
+    }
+}
+
+async function retryReport() {
+    document.getElementById('reportContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border rz-spinner" role="status" style="width:2rem;height:2rem;"></div><p class="mt-2">\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c \u0437\u0430\u043d\u043e\u0432\u043e...</p></div>';
+    try {
+        await fetch(`/api/projects/${projectId}/retry`, { method: 'POST' });
+        setTimeout(pollUntilReady, 3000);
+    } catch (e) {
+        document.getElementById('reportContent').innerHTML = '<p style="color:var(--danger)">\u041e\u0448\u0438\u0431\u043a\u0430 \u043f\u043e\u0432\u0442\u043e\u0440\u0430</p>';
     }
 }
 pollUntilReady();

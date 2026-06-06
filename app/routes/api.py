@@ -455,6 +455,55 @@ def chat(project_id):
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route("/projects/<int:project_id>/retry", methods=["POST"])
+def retry_report(project_id):
+    """Retry sending project data to agent."""
+    report = Report.query.filter_by(project_id=project_id).order_by(Report.id.desc()).first()
+    project = Project.query.get_or_404(project_id)
+    if not report or not report.raw_data:
+        return jsonify({"error": "No data to retry"}), 400
+
+    data = json.loads(report.raw_data)
+    metrika_data = data.get("metrika", {})
+    webmaster_data = data.get("webmaster", {})
+    reports = []
+    for rtype in ["traffic", "sources", "search_phrases", "landing_pages", "geo", "devices", "goals"]:
+        if rtype in metrika_data:
+            reports.append({"source": "metrika", "type": rtype, "data": metrika_data[rtype]})
+    for rtype in ["indexing", "search_queries"]:
+        if rtype in webmaster_data:
+            reports.append({"source": "webmaster", "type": rtype, "data": webmaster_data[rtype]})
+
+    yandex = None
+    token = project.user.oauth_token if project.user else None
+    if token:
+        yandex = {"token": token}
+        if project.metrika_counter_id:
+            yandex["metrika_counter_id"] = int(project.metrika_counter_id)
+        if project.webmaster_host_id:
+            yandex["webmaster_host_id"] = project.webmaster_host_id
+
+    goal_text = "Составь краткий быстрый отчёт: 3-5 ключевых выводов с цифрами, без лишней воды. Максимум 500 слов."
+    if project.metrika_goal_name:
+        goal_text += f" Цель: {project.metrika_goal_name}."
+
+    # Clear old report
+    report.ai_report_text = ""
+    db.session.commit()
+
+    try:
+        send_project_init(
+            project_id=project_id,
+            site_name=project.site_name,
+            reports=reports,
+            goal=goal_text,
+            yandex=yandex,
+        )
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @api_bp.route("/projects/<int:project_id>/status")
 def project_status(project_id):
     """Check if report is ready."""
