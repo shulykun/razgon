@@ -4,8 +4,9 @@ import requests as http_requests
 from flask import Blueprint, request, jsonify, session
 from app import db
 from app.models import Project, Report, IntegrationLog, ChatMessage
-from app.services.report import collect_data, generate_report
+from app.services.report import collect_data
 from app.services.logger import logged_request
+from app.agent.client import send_project_init, send_chat_message
 
 api_bp = Blueprint("api", __name__)
 
@@ -109,7 +110,7 @@ def create_project():
 
 
 def _generate_report_async(project_id, report_id, token, counter_id, goal_id, objective):
-    """Background task: collect data + call agent + save report."""
+    """Background task: collect data + send to agent API (async)."""
     from app import create_app
     app = create_app()
     with app.app_context():
@@ -124,7 +125,7 @@ def _generate_report_async(project_id, report_id, token, counter_id, goal_id, ob
         except Exception as e:
             from app.services.logger import log_integration
             log_integration("metrika", "collect_all", level="error", project_id=project_id, error_message=str(e))
-            # Try partial collection — collect reports one by one
+            # Partial collection fallback
             try:
                 from app.integrations.metrika import (
                     report_entry_pages, report_popular_pages, report_sources, report_day_hour,
@@ -150,7 +151,6 @@ def _generate_report_async(project_id, report_id, token, counter_id, goal_id, ob
                 data = {"metrika": metrika, "webmaster": {}}
             except Exception:
                 pass
-            # Try webmaster separately
             try:
                 from app.integrations.webmaster import collect_all_webmaster
                 if host_id:
@@ -158,21 +158,52 @@ def _generate_report_async(project_id, report_id, token, counter_id, goal_id, ob
             except Exception:
                 pass
 
-        # Always save raw_data
+        # Save raw_data
         report = db.session.get(Report, report_id)
         report.raw_data = json.dumps(data, ensure_ascii=False) if data else None
         db.session.commit()
 
-        try:
-            with logged_request("agent", "generate_report", project_id=project_id) as log:
-                ai_text = generate_report(data, objective=objective)
-                log.ok(response_snippet=ai_text[:500] if ai_text else None)
-        except Exception as e:
-            ai_text = f"Ошибка генерации отчёта: {str(e)}"
+        # Build reports array for agent API
+        reports = []
+        metrika_data = data.get("metrika", {})
+        webmaster_data = data.get("webmaster", {})
+        for rtype in ["traffic", "sources", "search_phrases", "landing_pages", "geo", "devices", "goals"]:
+            if rtype in metrika_data:
+                reports.append({"source": "metrika", "type": rtype, "data": metrika_data[rtype]})
+        for rtype in ["indexing", "search_queries"]:
+            if rtype in webmaster_data:
+                reports.append({"source": "webmaster", "type": rtype, "data": webmaster_data[rtype]})
 
-        report = db.session.get(Report, report_id)
-        report.ai_report_text = ai_text
-        db.session.commit()
+        # Build yandex config
+        yandex = None
+        if token:
+            yandex = {"token": token}
+            if counter_id:
+                yandex["metrika_counter_id"] = int(counter_id)
+            if host_id:
+                yandex["webmaster_host_id"] = host_id
+
+        goal_text = None
+        if project and project.metrika_goal_name:
+            goal_text = project.metrika_goal_name
+
+        # Send to agent
+        try:
+            with logged_request("agent", "send_init", project_id=project_id) as log:
+                result = send_project_init(
+                    project_id=project_id,
+                    site_name=project.site_name if project else "unknown",
+                    reports=reports,
+                    goal=goal_text,
+                    yandex=yandex,
+                )
+                log.ok(response_snippet=f"job_id={result.get('job_id')}")
+        except Exception as e:
+            from app.services.logger import log_integration
+            log_integration("agent", "send_init", level="error", project_id=project_id, error_message=str(e))
+            report = db.session.get(Report, report_id)
+            report.ai_report_text = f"Ошибка отправки данных агенту: {str(e)}"
+            db.session.commit()
 
 
 @api_bp.route("/projects/<int:project_id>", methods=["DELETE"])
@@ -347,13 +378,78 @@ def raw_data(project_id):
     return data
 
 
+@api_bp.route("/agent/callback", methods=["POST"])
+def agent_callback():
+    """Receive async callback from AI agent."""
+    data = request.json or {}
+    project_id = data.get("project_id")
+    msg_type = data.get("type")
+    message = data.get("message", {})
+    text = message.get("text", "")
+
+    if not project_id:
+        return jsonify({"ok": False, "error": "project_id required"}), 400
+
+    project = Project.query.filter_by(id=int(project_id)).first()
+    if not project:
+        return jsonify({"ok": False, "error": "project not found"}), 404
+
+    if msg_type == "report":
+        # Save report text
+        report = Report.query.filter_by(project_id=project.id).order_by(Report.id.desc()).first()
+        if report:
+            report.ai_report_text = text
+            db.session.commit()
+        # Save project_context if provided
+        pc = data.get("project_context")
+        if pc and pc.get("context"):
+            project.project_context = json.dumps(pc, ensure_ascii=False)
+            db.session.commit()
+        logger.info(f"Agent callback: report for project {project_id}")
+
+    elif msg_type == "message":
+        # Save chat message
+        chat = ChatMessage(project_id=project.id, role="assistant", text=text)
+        db.session.add(chat)
+        db.session.commit()
+        logger.info(f"Agent callback: message for project {project_id}")
+
+    elif msg_type == "error":
+        # Save error as report or chat
+        report = Report.query.filter_by(project_id=project.id).order_by(Report.id.desc()).first()
+        if report and not report.ai_report_text:
+            report.ai_report_text = f"Ошибка агента: {text}"
+            db.session.commit()
+        else:
+            chat = ChatMessage(project_id=project.id, role="assistant", text=f"⚠️ Ошибка: {text}")
+            db.session.add(chat)
+            db.session.commit()
+        logger.warning(f"Agent callback: error for project {project_id}: {text}")
+
+    return jsonify({"ok": True})
+
+
 @api_bp.route("/projects/<int:project_id>/chat", methods=["POST"])
 def chat(project_id):
     """Send message to AI agent and return response."""
     data = request.json
     message = data.get("message", "")
-    # TODO: load context, call agent, save messages
-    return jsonify({"role": "assistant", "text": f"Stub response to: {message}"})
+    if not message.strip():
+        return jsonify({"error": "Empty message"}), 400
+
+    project = Project.query.get_or_404(project_id)
+
+    # Save user message
+    user_msg = ChatMessage(project_id=project_id, role="user", text=message)
+    db.session.add(user_msg)
+    db.session.commit()
+
+    # Send to agent (async, response comes via callback)
+    try:
+        send_chat_message(project_id, message)
+        return jsonify({"status": "ok", "message": "Вопрос отправлен агенту. Ответ появится в чате."})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @api_bp.route("/projects/<int:project_id>/status")

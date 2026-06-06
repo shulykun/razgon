@@ -9,10 +9,10 @@ class Config:
     YANDEX_CLIENT_SECRET = os.environ.get("YANDEX_CLIENT_SECRET", "17838e34081d48d1b7d0b3f346b53332")
     YANDEX_REDIRECT_URI = os.environ.get("YANDEX_REDIRECT_URI", "https://razgon.roborumba.com/auth/callback")
     
-    # AI Agent (OpenAI-compatible)
-    AGENT_API_URL = os.environ.get("AGENT_API_URL", "http://localhost:8001/v1/chat/completions")
-    AGENT_API_KEY = os.environ.get("AGENT_API_KEY", "placeholder")
-    AGENT_MODEL = os.environ.get("AGENT_MODEL", "gpt-4")
+    # AI Agent (async agent API)
+    AGENT_API_URL = os.environ.get("AGENT_API_URL", "https://api-k6pryiwyuq-as.a.run.app/v1/messages")
+    AGENT_RAZGON_TOKEN = os.environ.get("AGENT_RAZGON_TOKEN", "13447af28a494d674a17a0b65b0d86915bbf5809805d9b1615fac82208eb405e")
+    AGENT_CALLBACK_BASE = os.environ.get("AGENT_CALLBACK_BASE", "https://razgon.roborumba.com")
     
     # Database
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///razgon.db")
