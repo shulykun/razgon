@@ -160,7 +160,7 @@ async function pollUntilReady() {
             document.getElementById('mainSpinner').style.display = 'none';
             document.getElementById('mainContent').style.display = '';
             if (data.ready) {
-                document.getElementById('reportContent').innerHTML = data.text.replace(/\n/g, '<br>');
+                document.getElementById('reportContent').innerHTML = data.text.replace(/\n/g, '<br>') + '<hr><button onclick="retryReport()" class="btn btn-outline-primary btn-sm mt-3">\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043e\u0442\u0447\u0451\u0442</button>';
             } else {
                 document.getElementById('reportContent').innerHTML = `<p style="color:var(--danger)">${data.text}</p><button onclick="retryReport()" class="btn btn-primary mt-3">\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c</button>`;
             }
