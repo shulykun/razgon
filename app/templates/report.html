@@ -22,6 +22,7 @@
             <div class="progress progress-custom mt-3 mx-auto" style="max-width:300px">
                 <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div>
             </div>
+            <a href="/project/{{ project_id }}/deepseek-report" class="btn btn-outline-secondary btn-sm mt-4">✨ Запросить через DeepSeek</a>
         </div>
 
         <!-- Content -->
@@ -145,7 +146,7 @@
 
 {% block extra_scripts %}
 <script>
-const projectId = {{ project_id }};
+let reportSource = 'external'; // 'external' or 'deepseek'
 
 // Chart.js dark theme defaults
 Chart.defaults.color = '#6b7294';
@@ -160,7 +161,10 @@ async function pollUntilReady() {
             document.getElementById('mainSpinner').style.display = 'none';
             document.getElementById('mainContent').style.display = '';
             if (data.ready) {
-                document.getElementById('reportContent').innerHTML = data.text.replace(/\n/g, '<br>') + '<hr><button onclick="retryReport()" class="btn btn-outline-primary btn-sm mt-3">\u041e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u043e\u0442\u0447\u0451\u0442</button>';
+                                let refreshBtn = reportSource === 'deepseek'
+                    ? '<button onclick="deepseekReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button>'
+                    : '<button onclick="retryReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button> <button onclick="deepseekReport()" class="btn btn-outline-secondary btn-sm mt-3">✨ DeepSeek отчёт</button>';
+                document.getElementById('reportContent').innerHTML = data.text.replace(/\n/g, '<br>') + '<hr>' + refreshBtn;
             } else {
                 document.getElementById('reportContent').innerHTML = `<p style="color:var(--danger)">${data.text}</p><button onclick="retryReport()" class="btn btn-primary mt-3">\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c</button>`;
             }
@@ -181,6 +185,28 @@ async function retryReport() {
         setTimeout(pollUntilReady, 3000);
     } catch (e) {
         document.getElementById('reportContent').innerHTML = '<p style="color:var(--danger)">\u041e\u0448\u0438\u0431\u043a\u0430 \u043f\u043e\u0432\u0442\u043e\u0440\u0430</p>';
+    }
+}
+
+async function deepseekReport() {
+    reportSource = 'deepseek';
+    document.getElementById('reportContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border rz-spinner" role="status" style="width:2rem;height:2rem;"></div><p class="mt-2">DeepSeek генерирует отчёт...</p></div>';
+    try {
+        await fetch(`/api/projects/${projectId}/deepseek-report`, { method: 'POST' });
+        setTimeout(pollUntilReady, 3000);
+    } catch (e) {
+        document.getElementById('reportContent').innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
+    }
+}
+
+async function deepseekReportFromSpinner() {
+    reportSource = 'deepseek';
+    document.getElementById('mainSpinner').innerHTML = '<div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div><p class="mt-3" style="color:var(--text-secondary)">DeepSeek генерирует отчёт...</p><p style="color:var(--text-secondary);font-size:0.85rem">Это может занять около минуты</p>';
+    try {
+        await fetch(`/api/projects/${projectId}/deepseek-report`, { method: 'POST' });
+        setTimeout(pollUntilReady, 3000);
+    } catch (e) {
+        document.getElementById('mainSpinner').innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
     }
 }
 pollUntilReady();
@@ -411,7 +437,7 @@ async function sendMessage() {
             body: JSON.stringify({message: text})
         });
         const data = await resp.json();
-        addMessage('assistant', data.text);
+        addMessage('assistant', data.response || data.text);
     } catch (e) {
         addMessage('assistant', 'Ошибка соединения с агентом');
     }

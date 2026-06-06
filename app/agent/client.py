@@ -18,6 +18,11 @@ def send_project_init(project_id, site_name, reports, goal=None, yandex=None):
     if yandex:
         payload["yandex"] = yandex
 
+    # Dump request for debugging
+    with open("/tmp/keng_request.json", "w") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    logger.info(f"Full Keng request dumped to /tmp/keng_request.json")
+
     resp = requests.post(
         Config.AGENT_API_URL,
         headers={

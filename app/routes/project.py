@@ -29,3 +29,22 @@ def report(project_id):
         goal_name=goal_name,
         objective_label=objective_label,
     )
+
+
+@project_bp.route("/<int:project_id>/deepseek-report")
+def deepseek_report_page(project_id):
+    project = Project.query.get_or_404(project_id)
+    end = datetime.now()
+    start = end - timedelta(days=30)
+
+    goal_name = project.metrika_goal_name or "—"
+    objective_label = OBJECTIVE_LABELS.get(project.objective, project.objective or "—")
+
+    return render_template("deepseek_report.html",
+        project_id=project_id,
+        project=project,
+        start_date=start.strftime("%d.%m.%Y"),
+        end_date=end.strftime("%d.%m.%Y"),
+        goal_name=goal_name,
+        objective_label=objective_label,
+    )

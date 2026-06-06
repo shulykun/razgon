@@ -3,6 +3,23 @@ import logging
 import threading
 import requests as http_requests
 from flask import Blueprint, request, jsonify, session
+
+OBJECTIVE_LABELS = {"sales": "Увеличить охват и продажи", "optimize": "Сэкономить на рекламе, не потеряв доход", "efficiency": "Поднять эффективность сайта", "audience": "Понять свою аудиторию"}
+STANDARD_OBJECTIVES = set(OBJECTIVE_LABELS.keys())
+
+
+def _build_goal_text(project):
+    """Build goal text from project settings, including custom objective."""
+    goal_text = "Составь аналитический отчёт с выводами и рекомендациями."
+    if project.metrika_goal_name:
+        goal_text += f" Цель: {project.metrika_goal_name}."
+    # Add objective as client's task
+    if project.objective:
+        if project.objective in STANDARD_OBJECTIVES:
+            goal_text += f" Задача клиента: {OBJECTIVE_LABELS[project.objective]}."
+        else:
+            goal_text += f" Задача клиента: {project.objective}."
+    return goal_text
 from app import db
 from app.models import Project, Report, IntegrationLog, ChatMessage
 from app.services.report import collect_data
@@ -187,9 +204,7 @@ def _generate_report_async(project_id, report_id, token, counter_id, goal_id, ob
             if host_id:
                 yandex["webmaster_host_id"] = host_id
 
-        goal_text = "Составь краткий быстрый отчёт: 3-5 ключевых выводов с цифрами, без лишней воды. Максимум 500 слов."
-        if project and project.metrika_goal_name:
-            goal_text += f" Цель: {project.metrika_goal_name}."
+        goal_text = _build_goal_text(project)
 
         # Send to agent
         try:
@@ -495,43 +510,67 @@ def retry_report(project_id):
         if project.webmaster_host_id:
             yandex["webmaster_host_id"] = project.webmaster_host_id
 
-    goal_text = "Составь краткий быстрый отчёт: 3-5 ключевых выводов с цифрами, без лишней воды. Максимум 500 слов."
-    if project.metrika_goal_name:
-        goal_text += f" Цель: {project.metrika_goal_name}."
+    goal_text = _build_goal_text(project)
 
     # Clear old report
     report.ai_report_text = ""
     db.session.commit()
 
-    # Try DeepSeek first, fallback to external agent
-    from app import create_app
+    # External agent only
+    try:
+        send_project_init(
+            project_id=project_id,
+            site_name=project.site_name,
+            reports=reports,
+            goal=goal_text,
+            yandex=yandex,
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"status": "ok"})
+
+
+@api_bp.route("/projects/<int:project_id>/deepseek-report", methods=["POST"])
+def deepseek_report(project_id):
+    """Generate report via DeepSeek agent only."""
+    report = Report.query.filter_by(project_id=project_id).order_by(Report.id.desc()).first()
+    project = Project.query.get_or_404(project_id)
+    if not report or not report.raw_data:
+        return jsonify({"error": "No data to retry"}), 400
+
+    data = json.loads(report.raw_data)
+    goal_text = _build_goal_text(project)
+
+    report.ai_report_text = ""
+    db.session.commit()
+
     _objective = project.objective
-    _site_name = project.site_name
     _project_id = project_id
+    _token = project.user.oauth_token if project.user else None
+    _counter_id = int(project.metrika_counter_id) if project.metrika_counter_id else None
+    _goal_id = project.metrika_goal_id if hasattr(project, 'metrika_goal_id') and project.metrika_goal_id else None
+    _wm_host_id = project.webmaster_host_id if hasattr(project, 'webmaster_host_id') and project.webmaster_host_id else None
 
     def _run():
+        from app import create_app
         app = create_app()
         with app.app_context():
             try:
-                text = ds_generate_report(data, objective=_objective, goal=goal_text)
+                text = ds_generate_report(
+                    data, objective=_objective, goal=goal_text,
+                    token=_token, counter_id=_counter_id, goal_id=_goal_id,
+                    webmaster_host_id=_wm_host_id,
+                )
                 report_obj = Report.query.filter_by(project_id=_project_id).order_by(Report.id.desc()).first()
                 report_obj.ai_report_text = text
                 db.session.commit()
                 logger.info(f"DeepSeek report saved for project {_project_id}")
             except Exception as e:
-                logger.error(f"DeepSeek failed, falling back to external agent: {e}")
-                try:
-                    send_project_init(
-                        project_id=_project_id,
-                        site_name=_site_name,
-                        reports=reports,
-                        goal=goal_text,
-                        yandex=yandex,
-                    )
-                except Exception as e2:
-                    report_obj = Report.query.filter_by(project_id=_project_id).order_by(Report.id.desc()).first()
-                    report_obj.ai_report_text = f"Ошибка: {str(e2)}"
-                    db.session.commit()
+                logger.error(f"DeepSeek failed: {e}")
+                report_obj = Report.query.filter_by(project_id=_project_id).order_by(Report.id.desc()).first()
+                report_obj.ai_report_text = f"Ошибка: {str(e)}"
+                db.session.commit()
 
     threading.Thread(target=_run, daemon=True).start()
     return jsonify({"status": "ok"})
