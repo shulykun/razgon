@@ -17,12 +17,12 @@
         <!-- Main spinner -->
         <div id="mainSpinner" class="text-center py-5">
             <div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div>
-            <p class="mt-3" style="color:var(--text-secondary)">Собираем данные и генерируем отчёт...</p>
+            <p class="mt-3" style="color:var(--text-secondary)">DeepSeek анализирует данные...</p>
             <p style="color:var(--text-secondary);font-size:0.85rem">Это может занять около минуты</p>
             <div class="progress progress-custom mt-3 mx-auto" style="max-width:300px">
                 <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div>
             </div>
-            <a href="/project/{{ project_id }}/deepseek-report" class="btn btn-outline-secondary btn-sm mt-4">✨ Запросить через DeepSeek</a>
+            <button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-4">📡 Запросить через внешнего агента</button>
         </div>
 
         <!-- Content -->
@@ -146,7 +146,8 @@
 
 {% block extra_scripts %}
 <script>
-let reportSource = 'external'; // 'external' or 'deepseek'
+const projectId = {{ project_id }};
+let reportSource = 'deepseek';
 
 // Chart.js dark theme defaults
 Chart.defaults.color = '#6b7294';
@@ -162,8 +163,8 @@ async function pollUntilReady() {
             document.getElementById('mainContent').style.display = '';
             if (data.ready) {
                                 let refreshBtn = reportSource === 'deepseek'
-                    ? '<button onclick="deepseekReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button>'
-                    : '<button onclick="retryReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button> <button onclick="deepseekReport()" class="btn btn-outline-secondary btn-sm mt-3">✨ DeepSeek отчёт</button>';
+                    ? '<button onclick="deepseekReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button> <button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-3">\uD83D\uDCE1 Внешний агент</button>'
+                    : '<button onclick="retryReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button>';
                 document.getElementById('reportContent').innerHTML = data.text.replace(/\n/g, '<br>') + '<hr>' + refreshBtn;
             } else {
                 document.getElementById('reportContent').innerHTML = `<p style="color:var(--danger)">${data.text}</p><button onclick="retryReport()" class="btn btn-primary mt-3">\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c</button>`;
@@ -190,12 +191,23 @@ async function retryReport() {
 
 async function deepseekReport() {
     reportSource = 'deepseek';
-    document.getElementById('reportContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border rz-spinner" role="status" style="width:2rem;height:2rem;"></div><p class="mt-2">DeepSeek генерирует отчёт...</p></div>';
+    // If spinner visible, update it; otherwise show in reportContent
+    const spinner = document.getElementById('mainSpinner');
+    const content = document.getElementById('reportContent');
+    if (spinner && spinner.style.display !== 'none') {
+        spinner.innerHTML = '<div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div><p class="mt-3" style="color:var(--text-secondary)">DeepSeek анализирует данные...</p><p style="color:var(--text-secondary);font-size:0.85rem">Агент запрашивает Метрику и генерирует отчёт</p><button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-4">\uD83D\uDCE1 Внешний агент</button>';
+    } else {
+        content.innerHTML = '<div class="text-center py-4"><div class="spinner-border rz-spinner" role="status" style="width:2rem;height:2rem;"></div><p class="mt-2">DeepSeek генерирует отчёт...</p></div>';
+    }
     try {
         await fetch(`/api/projects/${projectId}/deepseek-report`, { method: 'POST' });
         setTimeout(pollUntilReady, 3000);
     } catch (e) {
-        document.getElementById('reportContent').innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
+        if (spinner && spinner.style.display !== 'none') {
+            spinner.innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
+        } else {
+            content.innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
+        }
     }
 }
 
@@ -209,7 +221,36 @@ async function deepseekReportFromSpinner() {
         document.getElementById('mainSpinner').innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
     }
 }
-pollUntilReady();
+// On load: check status, start DeepSeek if no report exists
+async function initReport() {
+    try {
+        const resp = await fetch(`/api/projects/${projectId}/status`);
+        const data = await resp.json();
+        if (data.ready || data.error) {
+            pollUntilReady();
+            return;
+        }
+    } catch (e) {}
+    // No report yet — check if data is available before starting DeepSeek
+    try {
+        const resp = await fetch(`/api/projects/${projectId}/deepseek-report`, { method: 'POST' });
+        if (!resp.ok) {
+            const data = await resp.json();
+            if (data.error && data.error.includes('No data')) {
+                document.getElementById('mainSpinner').innerHTML = '<p class="mt-3" style="color:var(--text-secondary)">Данные ещё собираются...</p><p style="color:var(--text-secondary);font-size:0.85rem">Подождите минуту и обновите страницу</p>';
+                setTimeout(() => location.reload(), 15000);
+                return;
+            }
+            throw new Error(data.error || 'Ошибка');
+        }
+        reportSource = 'deepseek';
+        document.getElementById('mainSpinner').innerHTML = '<div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div><p class="mt-3" style="color:var(--text-secondary)">DeepSeek анализирует данные...</p><p style="color:var(--text-secondary);font-size:0.85rem">Это может занять около минуты</p><button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-4">\uD83D\uDCE1 Внешний агент</button>';
+        setTimeout(pollUntilReady, 3000);
+    } catch (e) {
+        document.getElementById('mainSpinner').innerHTML = '<p style="color:var(--danger)">Ошибка: ' + e.message + '</p><button onclick="location.reload()" class="btn btn-primary btn-sm mt-3">Обновить</button>';
+    }
+}
+initReport();
 
 const accent = '#7c6aef';
 const accentSoft = 'rgba(124,106,239,0.15)';
