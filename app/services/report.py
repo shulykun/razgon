@@ -1,6 +1,5 @@
 from app.integrations.metrika import collect_all_reports as collect_metrika
 from app.integrations.webmaster import collect_all_webmaster
-from app.agent.client import call_agent
 import json
 
 

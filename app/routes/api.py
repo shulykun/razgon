@@ -1,4 +1,5 @@
 import json
+import logging
 import threading
 import requests as http_requests
 from flask import Blueprint, request, jsonify, session
@@ -7,6 +8,8 @@ from app.models import Project, Report, IntegrationLog, ChatMessage
 from app.services.report import collect_data
 from app.services.logger import logged_request
 from app.agent.client import send_project_init, send_chat_message
+
+logger = logging.getLogger(__name__)
 
 api_bp = Blueprint("api", __name__)
 
@@ -183,9 +186,9 @@ def _generate_report_async(project_id, report_id, token, counter_id, goal_id, ob
             if host_id:
                 yandex["webmaster_host_id"] = host_id
 
-        goal_text = None
+        goal_text = "Составь краткий быстрый отчёт: 3-5 ключевых выводов с цифрами, без лишней воды. Максимум 500 слов."
         if project and project.metrika_goal_name:
-            goal_text = project.metrika_goal_name
+            goal_text += f" Цель: {project.metrika_goal_name}."
 
         # Send to agent
         try:
