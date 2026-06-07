@@ -10,7 +10,6 @@ Common metrics:
 - ym:s:bounceRate — отказы %
 - ym:s:pageDepth — глубина просмотра
 - ym:s:avgVisitDurationSeconds — средняя длительность
-- ym:s:goal<id>reaches — достижения цели
 - ym:s:goal<id>conversionRate — конверсия цели %
 
 All reports include sessions + main goal metrics.
@@ -29,12 +28,12 @@ def _headers(token):
 
 def _base_metrics(goal_id=None):
     """Core metrics: sessions + goal or ecommerce revenue."""
-    metrics = "ym:s:visits,ym:s:users,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds"
+    metrics = "ym:s:visits,ym:s:bounceRate,ym:s:pageDepth,ym:s:avgVisitDurationSeconds"
     if goal_id:
         if goal_id == "ecommerce_revenue":
             metrics += ",ym:s:ecommerceRevenue,ym:s:ecommercePurchasedProducts"
         else:
-            metrics += f",ym:s:goal{goal_id}reaches,ym:s:goal{goal_id}conversionRate"
+            metrics += f",ym:s:goal{goal_id}conversionRate"
     return metrics
 
 

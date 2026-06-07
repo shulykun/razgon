@@ -34,9 +34,14 @@
             </label>
         </div>
 
+        <div class="mb-4">
+            <label style="color:var(--text-secondary);font-size:0.9rem;">Комментарий <span style="opacity:0.5">(необязательно)</span></label>
+            <textarea id="commentInput" class="form-control mt-1" rows="3" placeholder="Например: фокус на мобильной аудитории, сезонный спад трафика, запуск нового продукта..." style="font-size:0.9rem;"></textarea>
+        </div>
+
         <div class="d-flex gap-2">
-            <a href="/setup/goal" class="btn btn-ghost" style="padding:0.65rem 1.2rem;">← Назад</a>
-            <button id="nextBtn" class="btn btn-accent flex-grow-1">Создать отчёт <i class="bi bi-lightning-charge-fill ms-1"></i></button>
+            <a href="/setup/site" class="btn btn-ghost" style="padding:0.65rem 1.2rem;">← Назад</a>
+            <button id="nextBtn" class="btn btn-accent flex-grow-1">Далее →</button>
         </div>
     </div>
 </section>
@@ -66,19 +71,13 @@ document.getElementById('nextBtn').addEventListener('click', () => {
     fetch('/setup/api/objective', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({objective})
+        body: JSON.stringify({objective, comment: document.getElementById('commentInput').value.trim()})
     }).then(() => {
-        return fetch('/api/projects', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({})
-        });
-    }).then(r => r.json()).then(data => {
-        window.location.href = '/project/' + data.project_id + '/report';
+        window.location.href = '/setup/goal';
     }).catch(e => {
         alert('Ошибка: ' + e.message);
         btn.disabled = false;
-        btn.textContent = 'Создать отчёт ⚡';
+        btn.textContent = 'Далее →';
     });
 });
 </script>

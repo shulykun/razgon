@@ -24,6 +24,7 @@ class Project(db.Model):
     metrika_counter_id = db.Column(db.String(64))
     webmaster_host_id = db.Column(db.String(64))
     project_context = db.Column(db.Text)  # JSON: agent's long-term context (niche, siteType, etc.)
+    comment = db.Column(db.Text)  # Free-form comment from setup
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     reports = db.relationship("Report", backref="project", lazy=True)
     messages = db.relationship("ChatMessage", backref="project", lazy=True)

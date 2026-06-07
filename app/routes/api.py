@@ -7,6 +7,19 @@ from flask import Blueprint, request, jsonify, session
 OBJECTIVE_LABELS = {"sales": "Увеличить охват и продажи", "optimize": "Сэкономить на рекламе, не потеряв доход", "efficiency": "Поднять эффективность сайта", "audience": "Понять свою аудиторию"}
 STANDARD_OBJECTIVES = set(OBJECTIVE_LABELS.keys())
 
+def _get_token():
+    """Get OAuth token from session or database."""
+    token = session.get("oauth_token")
+    if token:
+        return token
+    user_id = session.get("user_id")
+    if user_id:
+        user = User.query.get(user_id)
+        if user and user.oauth_token:
+            session["oauth_token"] = user.oauth_token  # cache in session
+            return user.oauth_token
+    return None
+
 
 def _build_goal_text(project):
     """Build goal text from project settings, including custom objective."""
@@ -19,13 +32,15 @@ def _build_goal_text(project):
             goal_text += f" Задача клиента: {OBJECTIVE_LABELS[project.objective]}."
         else:
             goal_text += f" Задача клиента: {project.objective}."
+    if project.comment:
+        goal_text += f" {project.comment}"
     return goal_text
 from app import db
 from app.models import Project, Report, IntegrationLog, ChatMessage
 from app.services.report import collect_data
 from app.services.logger import logged_request
 from app.agent.client import send_project_init, send_chat_message
-from app.agent.deepseek_agent import generate_report as ds_generate_report, chat_with_context
+from app.agent.deepseek_agent import generate_report as ds_generate_report, chat_with_context, get_agent_step
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +50,7 @@ api_bp = Blueprint("api", __name__)
 @api_bp.route("/counters/<counter_id>/goals")
 def get_goals(counter_id):
     """Get goals for a Metrika counter."""
-    token = session.get("oauth_token")
+    token = _get_token()
     if not token:
         return jsonify([])
     try:
@@ -60,11 +75,13 @@ def create_project():
     goal_id = data.get("goal_id") or session.get("setup_goal_id")
     objective = data.get("objective") or session.get("setup_objective", "sales")
 
+    comment = data.get("comment") or session.get("setup_comment", "")
+
     # Get site name from Metrika
     site_name = f"Сайт #{counter_id}"
     goal_name = ""
     host_id = None
-    token = session.get("oauth_token", "")
+    token = _get_token() or ""
     if token:
         try:
             resp = http_requests.get(
@@ -112,6 +129,7 @@ def create_project():
         metrika_goal_name=goal_name,
         webmaster_host_id=host_id,
         user_id=user_id,
+        comment=comment,
     )
     db.session.add(project)
     db.session.commit()
@@ -468,7 +486,7 @@ def chat(project_id):
     raw_data = json.loads(report.raw_data) if report and report.raw_data else None
 
     try:
-        response_text = chat_with_context(project_id, message, data=raw_data)
+        response_text = chat_with_context(project_id, message, data=raw_data, report_text=report.ai_report_text if report else None)
         assistant_msg = ChatMessage(project_id=project_id, role="assistant", text=response_text)
         db.session.add(assistant_msg)
         db.session.commit()
@@ -480,6 +498,25 @@ def chat(project_id):
             return jsonify({"status": "ok", "message": "Вопрос отправлен агенту. Ответ появится в чате."})
         except Exception as e2:
             return jsonify({"error": str(e2)}), 500
+
+
+@api_bp.route("projects/<int:project_id>/chat-history")
+def chat_history(project_id):
+    messages = ChatMessage.query.filter_by(project_id=project_id).order_by(ChatMessage.id.asc()).all()
+    return jsonify({"messages": [{"role": m.role, "text": m.text} for m in messages]})
+
+
+@api_bp.route("projects/<int:project_id>/chat-clear", methods=["POST"])
+def chat_clear(project_id):
+    ChatMessage.query.filter_by(project_id=project_id).delete()
+    db.session.commit()
+    return jsonify({"status": "ok"})
+
+
+@api_bp.route("projects/<int:project_id>/agent-step")
+def agent_step(project_id):
+    step = get_agent_step(project_id)
+    return jsonify(step)
 
 
 @api_bp.route("/projects/<int:project_id>/retry", methods=["POST"])
@@ -560,7 +597,7 @@ def deepseek_report(project_id):
                 text = ds_generate_report(
                     data, objective=_objective, goal=goal_text,
                     token=_token, counter_id=_counter_id, goal_id=_goal_id,
-                    webmaster_host_id=_wm_host_id,
+                    webmaster_host_id=_wm_host_id, project_id=_project_id,
                 )
                 report_obj = Report.query.filter_by(project_id=_project_id).order_by(Report.id.desc()).first()
                 report_obj.ai_report_text = text

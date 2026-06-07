@@ -34,7 +34,7 @@ document.getElementById('nextBtn').addEventListener('click', () => {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({counter_id: r.value})
-    }).then(() => window.location.href = '/setup/goal');
+    }).then(() => window.location.href = '/setup/objective');
 });
 </script>
 {% endblock %}

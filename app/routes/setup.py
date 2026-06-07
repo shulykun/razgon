@@ -30,18 +30,7 @@ def step_site():
     return render_template("step_site.html", step=1, counters=counters)
 
 
-# --- Step 2: Goal on counter (цель на счётчике) ---
-@setup_bp.route("/goal")
-def step_goal():
-    redir = _require_auth()
-    if redir:
-        return redir
-    if not session.get("setup_counter_id"):
-        return redirect(url_for("setup.step_site"))
-    return render_template("step_goal.html", step=2)
-
-
-# --- Step 3: Objective (цель запуска) ---
+# --- Step 2: Objective (цель клиента) ---
 @setup_bp.route("/objective")
 def step_objective():
     redir = _require_auth()
@@ -49,7 +38,20 @@ def step_objective():
         return redir
     if not session.get("setup_counter_id"):
         return redirect(url_for("setup.step_site"))
-    return render_template("step_objective.html", step=3)
+    return render_template("step_objective.html", step=2)
+
+
+# --- Step 3: Goal on counter (цель на счётчике) ---
+@setup_bp.route("/goal")
+def step_goal():
+    redir = _require_auth()
+    if redir:
+        return redir
+    if not session.get("setup_counter_id"):
+        return redirect(url_for("setup.step_site"))
+    if not session.get("setup_objective"):
+        return redirect(url_for("setup.step_objective"))
+    return render_template("step_goal.html", step=3)
 
 
 # --- API: save state between steps ---
@@ -71,6 +73,7 @@ def api_set_goal():
 def api_set_objective():
     data = request.get_json()
     session["setup_objective"] = data.get("objective", "sales")
+    session["setup_comment"] = data.get("comment", "")
     return jsonify(ok=True)
 
 

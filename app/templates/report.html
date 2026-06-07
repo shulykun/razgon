@@ -3,6 +3,37 @@
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+#reportContent h1 { font-size: 1.5rem; font-weight: 700; margin: 1.2rem 0 0.6rem; color: var(--text-primary); }
+#reportContent h2 { font-size: 1.25rem; font-weight: 700; margin: 1rem 0 0.5rem; color: var(--text-primary); }
+#reportContent h3 { font-size: 1.1rem; font-weight: 600; margin: 0.8rem 0 0.4rem; color: var(--text-primary); }
+#reportContent h4 { font-size: 1rem; font-weight: 600; margin: 0.6rem 0 0.3rem; }
+#reportContent p { margin: 0.4rem 0; line-height: 1.7; }
+#reportContent ul, #reportContent ol { padding-left: 1.5rem; margin: 0.4rem 0; }
+#reportContent li { margin: 0.2rem 0; line-height: 1.6; }
+#reportContent strong { font-weight: 600; }
+#reportContent em { font-style: italic; }
+#reportContent hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+#reportContent table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.9rem; }
+#reportContent th { background: var(--surface); font-weight: 600; text-align: left; padding: 0.5rem 0.6rem; border-bottom: 2px solid var(--border); }
+#reportContent td { padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); }
+#reportContent tr:hover td { background: var(--surface); }
+#reportContent code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
+#reportContent pre { background: var(--surface); padding: 0.8rem; border-radius: 8px; overflow-x: auto; }
+#reportContent pre code { background: none; padding: 0; }
+#reportContent blockquote { border-left: 3px solid var(--accent); padding-left: 1rem; margin: 0.6rem 0; color: var(--text-secondary); }
+#reportContent.collapsed { max-height: 6em; overflow: hidden; position: relative; }
+#reportContent.collapsed::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3em; background: linear-gradient(transparent, var(--card-bg)); pointer-events: none; }
+.report-markdown h1,.report-markdown h2,.report-markdown h3 { font-size: 1rem; font-weight: 600; margin: 0.4rem 0 0.2rem; }
+.report-markdown p { margin: 0.2rem 0; }
+.report-markdown ul,.report-markdown ol { padding-left: 1.2rem; margin: 0.2rem 0; }
+.report-markdown table { width: 100%; border-collapse: collapse; margin: 0.4rem 0; font-size: 0.85rem; }
+.report-markdown th { font-weight: 600; text-align: left; padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border); }
+.report-markdown td { padding: 0.25rem 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.report-markdown code { background: var(--surface); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.85em; }
+.report-markdown strong { font-weight: 600; }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -15,25 +46,8 @@
         </p>
 
         <!-- Main spinner -->
-        <div id="mainSpinner" class="text-center py-5">
-            <div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div>
-            <p class="mt-3" style="color:var(--text-secondary)">DeepSeek анализирует данные...</p>
-            <p style="color:var(--text-secondary);font-size:0.85rem">Это может занять около минуты</p>
-            <div class="progress progress-custom mt-3 mx-auto" style="max-width:300px">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%"></div>
-            </div>
-            <button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-4">📡 Запросить через внешнего агента</button>
-        </div>
-
-        <!-- Content -->
-        <div id="mainContent" style="display:none;">
-
-        <!-- AI Report -->
-        <div class="rz-card mb-4">
-            <h6><i class="bi bi-robot me-2"></i>AI-анализ</h6>
-            <div id="reportContent" style="line-height:1.7;font-size:0.95rem;"></div>
-        </div>
-
+        <!-- Content always visible -->
+        <div id="mainContent">
         <!-- Charts dropdown -->
         <div class="accordion accordion-custom mb-4" id="chartsAccordion">
             <div class="accordion-item">
@@ -127,9 +141,15 @@
             </div>
         </div>
 
+        <!-- AI Report -->
+        <div class="rz-card mb-4">
+            <h6><i class="bi bi-robot me-2"></i>AI-анализ <button id="toggleReportBtn" onclick="toggleReport()" class="btn btn-outline-secondary btn-sm float-end" style="font-size:0.75rem;padding:0.15rem 0.5rem"><i class="bi bi-chevron-up"></i></button></h6>
+            <div id="reportContent" style="line-height:1.7;font-size:0.95rem;"></div>
+        </div>
+
         <!-- Chat -->
         <div class="rz-card">
-            <h6><i class="bi bi-chat-dots me-2"></i>Задайте вопрос агенту</h6>
+            <h6><i class="bi bi-chat-dots me-2"></i>Задайте вопрос агенту <button onclick="clearChat()" class="btn btn-outline-secondary btn-sm float-end" style="font-size:0.75rem">Очистить</button></h6>
             <div class="chat-box mb-3" id="chatBox">
                 <div class="text-center py-3" style="color:var(--text-secondary)">Начните диалог с AI-агентом</div>
             </div>
@@ -159,13 +179,12 @@ async function pollUntilReady() {
         const resp = await fetch(`/api/projects/${projectId}/status`);
         const data = await resp.json();
         if (data.ready || data.error) {
-            document.getElementById('mainSpinner').style.display = 'none';
-            document.getElementById('mainContent').style.display = '';
+            // Content already visible
             if (data.ready) {
                                 let refreshBtn = reportSource === 'deepseek'
                     ? '<button onclick="deepseekReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button> <button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-3">\uD83D\uDCE1 Внешний агент</button>'
                     : '<button onclick="retryReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button>';
-                document.getElementById('reportContent').innerHTML = data.text.replace(/\n/g, '<br>') + '<hr>' + refreshBtn;
+                document.getElementById('reportContent').innerHTML = (typeof marked !== 'undefined' ? marked.parse(data.text) : data.text.replace(/\n/g, '<br>')) + '<hr>' + refreshBtn;
             } else {
                 document.getElementById('reportContent').innerHTML = `<p style="color:var(--danger)">${data.text}</p><button onclick="retryReport()" class="btn btn-primary mt-3">\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c</button>`;
             }
@@ -191,37 +210,32 @@ async function retryReport() {
 
 async function deepseekReport() {
     reportSource = 'deepseek';
-    // If spinner visible, update it; otherwise show in reportContent
-    const spinner = document.getElementById('mainSpinner');
-    const content = document.getElementById('reportContent');
-    if (spinner && spinner.style.display !== 'none') {
-        spinner.innerHTML = '<div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div><p class="mt-3" style="color:var(--text-secondary)">DeepSeek анализирует данные...</p><p style="color:var(--text-secondary);font-size:0.85rem">Агент запрашивает Метрику и генерирует отчёт</p><button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-4">\uD83D\uDCE1 Внешний агент</button>';
-    } else {
-        content.innerHTML = '<div class="text-center py-4"><div class="spinner-border rz-spinner" role="status" style="width:2rem;height:2rem;"></div><p class="mt-2">DeepSeek генерирует отчёт...</p></div>';
-    }
+    document.getElementById('reportContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border rz-spinner" role="status" style="width:2rem;height:2rem;"></div><p class="mt-2" style="color:var(--text-secondary)">DeepSeek анализирует данные...</p><div id="agentStepInfo" class="mt-2" style="color:var(--text-secondary);font-size:0.85rem;max-width:500px;margin:0.5rem auto 0;padding:0.5rem 1rem;background:var(--surface);border-radius:8px;min-height:2rem;line-height:1.5"></div></div>';
     try {
         await fetch(`/api/projects/${projectId}/deepseek-report`, { method: 'POST' });
         setTimeout(pollUntilReady, 3000);
+        pollAgentStep();
     } catch (e) {
-        if (spinner && spinner.style.display !== 'none') {
-            spinner.innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
-        } else {
-            content.innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
-        }
+        document.getElementById('reportContent').innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
     }
 }
 
-async function deepseekReportFromSpinner() {
-    reportSource = 'deepseek';
-    document.getElementById('mainSpinner').innerHTML = '<div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div><p class="mt-3" style="color:var(--text-secondary)">DeepSeek генерирует отчёт...</p><p style="color:var(--text-secondary);font-size:0.85rem">Это может занять около минуты</p>';
-    try {
-        await fetch(`/api/projects/${projectId}/deepseek-report`, { method: 'POST' });
-        setTimeout(pollUntilReady, 3000);
-    } catch (e) {
-        document.getElementById('mainSpinner').innerHTML = '<p style="color:var(--danger)">Ошибка DeepSeek</p>';
-    }
-}
 // On load: check status, start DeepSeek if no report exists
+async function pollAgentStep() {
+    const stepEl = document.getElementById('agentStepInfo');
+    if (!stepEl) return;
+    try {
+        const resp = await fetch(`/api/projects/${projectId}/agent-step`);
+        const data = await resp.json();
+        if (data.step) {
+            const round = data.round ? `Раунд ${data.round}: ` : '';
+            stepEl.textContent = round + data.step;
+        }
+    } catch (e) {}
+    // Keep polling until spinner disappears
+    // Agent step polling handled by pollUntilReady
+}
+
 async function initReport() {
     try {
         const resp = await fetch(`/api/projects/${projectId}/status`);
@@ -237,20 +251,23 @@ async function initReport() {
         if (!resp.ok) {
             const data = await resp.json();
             if (data.error && data.error.includes('No data')) {
-                document.getElementById('mainSpinner').innerHTML = '<p class="mt-3" style="color:var(--text-secondary)">Данные ещё собираются...</p><p style="color:var(--text-secondary);font-size:0.85rem">Подождите минуту и обновите страницу</p>';
+                document.getElementById('reportContent').innerHTML = '<p class="mt-3" style="color:var(--text-secondary)">Данные ещё собираются...</p><p style="color:var(--text-secondary);font-size:0.85rem">Подождите минуту и обновите страницу</p>';
                 setTimeout(() => location.reload(), 15000);
                 return;
             }
             throw new Error(data.error || 'Ошибка');
         }
         reportSource = 'deepseek';
-        document.getElementById('mainSpinner').innerHTML = '<div class="spinner-border rz-spinner" role="status" style="width:3rem;height:3rem;"></div><p class="mt-3" style="color:var(--text-secondary)">DeepSeek анализирует данные...</p><p style="color:var(--text-secondary);font-size:0.85rem">Это может занять около минуты</p><button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-4">\uD83D\uDCE1 Внешний агент</button>';
+        document.getElementById('reportContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border rz-spinner" role="status" style="width:2rem;height:2rem;"></div><p class="mt-2" style="color:var(--text-secondary)">DeepSeek анализирует данные...</p><div id="agentStepInfo" class="mt-2" style="color:var(--text-secondary);font-size:0.85rem;max-width:500px;margin:0.5rem auto 0;padding:0.5rem 1rem;background:var(--surface);border-radius:8px;min-height:2rem;line-height:1.5"></div></div>';
         setTimeout(pollUntilReady, 3000);
+        pollAgentStep();
     } catch (e) {
-        document.getElementById('mainSpinner').innerHTML = '<p style="color:var(--danger)">Ошибка: ' + e.message + '</p><button onclick="location.reload()" class="btn btn-primary btn-sm mt-3">Обновить</button>';
+        document.getElementById('reportContent').innerHTML = '<p style="color:var(--danger)">Ошибка: ' + e.message + '</p><button onclick="location.reload()" class="btn btn-primary btn-sm mt-3">Обновить</button>';
     }
 }
 initReport();
+loadCharts();
+loadRawData();
 
 const accent = '#7c6aef';
 const accentSoft = 'rgba(124,106,239,0.15)';
@@ -461,7 +478,10 @@ const sendBtn = document.getElementById('sendBtn');
 function addMessage(role, text) {
     const div = document.createElement('div');
     div.className = `chat-msg ${role}`;
-    div.innerHTML = `<div class="bubble">${text}</div>`;
+    const rendered = role === 'assistant' && typeof marked !== 'undefined'
+        ? marked.parse(text)
+        : text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+    div.innerHTML = `<div class="bubble report-markdown">${rendered}</div>`;
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -471,6 +491,13 @@ async function sendMessage() {
     if (!text) return;
     chatInput.value = '';
     addMessage('user', text);
+    const loaderId = 'chat-loader-' + Date.now();
+    const loaderDiv = document.createElement('div');
+    loaderDiv.className = 'chat-msg assistant';
+    loaderDiv.id = loaderId;
+    loaderDiv.innerHTML = '<div class="bubble"><div class="d-flex align-items-center gap-2"><div class="spinner-border rz-spinner" role="status" style="width:1rem;height:1rem;"></div><span style="color:var(--text-secondary)">Агент думает...</span></div></div>';
+    chatBox.appendChild(loaderDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
     try {
         const resp = await fetch(`/api/projects/${projectId}/chat`, {
             method: 'POST',
@@ -478,13 +505,49 @@ async function sendMessage() {
             body: JSON.stringify({message: text})
         });
         const data = await resp.json();
+        document.getElementById(loaderId).remove();
         addMessage('assistant', data.response || data.text);
     } catch (e) {
+        document.getElementById(loaderId).remove();
         addMessage('assistant', 'Ошибка соединения с агентом');
     }
 }
 
 sendBtn.addEventListener('click', sendMessage);
 chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+
+// Load chat history on page load
+async function loadChatHistory() {
+    try {
+        const resp = await fetch(`/api/projects/${projectId}/chat-history`);
+        const data = await resp.json();
+        if (data.messages && data.messages.length > 0) {
+            data.messages.forEach(m => addMessage(m.role, m.text));
+        }
+    } catch (e) {}
+}
+loadChatHistory();
+
+let reportCollapsed = false;
+function toggleReport() {
+    const el = document.getElementById('reportContent');
+    const btn = document.getElementById('toggleReportBtn');
+    reportCollapsed = !reportCollapsed;
+    if (reportCollapsed) {
+        el.classList.add('collapsed');
+        btn.innerHTML = '<i class="bi bi-chevron-down"></i>';
+    } else {
+        el.classList.remove('collapsed');
+        btn.innerHTML = '<i class="bi bi-chevron-up"></i>';
+    }
+}
+
+async function clearChat() {
+    if (!confirm('Очистить историю чата?')) return;
+    try {
+        await fetch(`/api/projects/${projectId}/chat-clear`, { method: 'POST' });
+        chatBox.innerHTML = '<div class="text-center py-3" style="color:var(--text-secondary)">Начните диалог с AI-агентом</div>';
+    } catch (e) {}
+}
 </script>
 {% endblock %}
