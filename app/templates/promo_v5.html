@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+{% block title %}Разгон — Узнайте почему сайт не продаёт{% endblock %}
+
+{% block extra_head %}
+<style>
+.navbar-custom { display: none !important; }
+    :root {
+        --brand-dark: #0d0520;
+        --brand-purple: #7c3aed;
+        --brand-violet: #a855f7;
+        --brand-orange: #f97316;
+    }
+
+    .promo-b * { font-family: 'Inter', -apple-system, sans-serif; }
+
+    /* Hero */
+    .hero-b {
+        position: relative;
+        background: var(--brand-dark);
+        overflow: hidden;
+        padding: 70px 0 90px;
+        text-align: center;
+        color: #fff;
+    }
+    .hero-b::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 80% 60% at 20% 80%, rgba(124,58,237,0.25) 0%, transparent 70%),
+            radial-gradient(ellipse 60% 50% at 80% 20%, rgba(249,115,22,0.15) 0%, transparent 70%);
+    }
+    .hero-b .container { position: relative; z-index: 1; }
+    .hero-b .logo-wrap img {
+        width: 56px; height: 56px;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(124,58,237,0.4);
+        margin-bottom: 1.2rem;
+    }
+    .hero-b h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+    }
+    .hero-b h1 span {
+        background: linear-gradient(135deg, var(--brand-orange), #ef4444);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hero-b .subtitle {
+        font-size: 1.15rem;
+        color: rgba(255,255,255,0.5);
+        max-width: 520px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.6;
+    }
+    .hero-b .price-note {
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.35);
+        margin-top: 1rem;
+    }
+    .btn-razgon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: linear-gradient(135deg, var(--brand-purple), var(--brand-orange));
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.1rem;
+        padding: 0.9rem 2.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 30px rgba(124,58,237,0.35);
+    }
+    .btn-razgon:hover {
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 45px rgba(124,58,237,0.5);
+    }
+
+    /* Pain points */
+    .pains-b {
+        padding: 80px 0;
+        background: #faf8fc;
+    }
+    .pains-b h2 {
+        font-size: 1.9rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        color: var(--brand-dark);
+    }
+    .pains-b .sub {
+        text-align: center;
+        color: #8b7f9a;
+        margin-bottom: 3rem;
+        font-size: 1.05rem;
+    }
+    .pain-card {
+        background: #fff;
+        border: 1px solid rgba(124,58,237,0.06);
+        border-radius: 20px;
+        padding: 2rem;
+        height: 100%;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+        transition: all 0.3s ease;
+    }
+    .pain-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(124,58,237,0.1);
+    }
+    .pain-card .emoji { font-size: 2rem; margin-bottom: 0.8rem; display: block; }
+    .pain-card h5 { font-weight: 600; color: var(--brand-dark); margin-bottom: 0.5rem; }
+    .pain-card p { color: #6b5f7a; font-size: 0.9rem; line-height: 1.6; margin: 0; }
+
+    /* Report preview */
+    .preview-b {
+        padding: 80px 0;
+        background: var(--brand-dark);
+        color: #fff;
+    }
+    .preview-b h2 {
+        font-size: 1.9rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+    .preview-b .sub {
+        text-align: center;
+        color: rgba(255,255,255,0.4);
+        margin-bottom: 3rem;
+    }
+    .report-mock {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 20px;
+        padding: 2.5rem;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    .report-mock h4 { color: rgba(255,255,255,0.9); font-weight: 700; margin-bottom: 1.5rem; font-size: 1.1rem; }
+    .mock-section { margin-bottom: 1.5rem; }
+    .mock-section .label { font-size: 0.85rem; font-weight: 600; color: var(--brand-orange); margin-bottom: 0.3rem; }
+    .mock-section .text { color: rgba(255,255,255,0.55); font-size: 0.88rem; line-height: 1.5; }
+    .mock-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    .mock-table th { font-size: 0.75rem; color: rgba(255,255,255,0.35); text-align: left; padding: 0.4rem 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .mock-table td { font-size: 0.82rem; color: rgba(255,255,255,0.55); padding: 0.4rem 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .mock-table .red { color: #ef4444; }
+    .mock-table .green { color: #22c55e; }
+    .mock-table .yellow { color: #eab308; }
+
+    /* How it works */
+    .how-b {
+        padding: 80px 0;
+        background: #faf8fc;
+    }
+    .how-b h2 {
+        font-size: 1.9rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        color: var(--brand-dark);
+    }
+    .how-b .sub {
+        text-align: center;
+        color: #8b7f9a;
+        margin-bottom: 3rem;
+    }
+    .how-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .how-step .num {
+        flex-shrink: 0;
+        width: 48px; height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #fff;
+        background: linear-gradient(135deg, var(--brand-purple), var(--brand-orange));
+    }
+    .how-step h5 { font-weight: 600; color: var(--brand-dark); margin-bottom: 0.2rem; }
+    .how-step p { color: #6b5f7a; font-size: 0.9rem; margin: 0; }
+
+    /* Compare */
+    .compare-b {
+        padding: 80px 0;
+        background: var(--brand-dark);
+        color: #fff;
+    }
+    .compare-b h2 {
+        font-size: 1.9rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    .compare-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    .compare-col { padding: 1.5rem; border-radius: 20px; }
+    .compare-col.agency {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+    .compare-col.razgon {
+        background: rgba(124,58,237,0.1);
+        border: 1px solid rgba(124,58,237,0.25);
+    }
+    .compare-col h5 { font-weight: 700; margin-bottom: 1rem; font-size: 1.05rem; }
+    .compare-col.agency h5 { color: rgba(255,255,255,0.5); }
+    .compare-col.razgon h5 { color: var(--brand-orange); }
+    .compare-col ul { list-style: none; padding: 0; }
+    .compare-col ul li {
+        padding: 0.35rem 0;
+        font-size: 0.88rem;
+        color: rgba(255,255,255,0.5);
+    }
+    .compare-col.razgon ul li { color: rgba(255,255,255,0.75); }
+    .compare-col ul li::before { margin-right: 0.5rem; }
+    .compare-col.agency ul li::before { content: '·'; }
+    .compare-col.razgon ul li::before { content: '✓'; color: #22c55e; }
+
+    /* CTA */
+    .cta-b {
+        padding: 80px 0;
+        background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-orange) 100%);
+        text-align: center;
+        color: #fff;
+    }
+    .cta-b h2 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .cta-b p { font-size: 1.05rem; opacity: 0.85; margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .cta-b .btn-white {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #fff;
+        color: var(--brand-purple);
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 0.9rem 2.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    .cta-b .btn-white:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 45px rgba(0,0,0,0.25);
+        color: var(--brand-purple);
+    }
+
+    /* Footer */
+    .footer-b {
+        padding: 30px 0;
+        background: #080214;
+        text-align: center;
+        color: rgba(255,255,255,0.3);
+        font-size: 0.82rem;
+    }
+
+    @media (max-width: 768px) {
+        .hero-b h1 { font-size: 2.2rem; }
+        .compare-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="promo-b">
+    <!-- Hero -->
+    <div class="hero-b">
+        <div class="container">
+            <div class="logo-wrap">
+                <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Разгон">
+            </div>
+            <h1>Почему ваш сайт<br><span>не приносит клиентов?</span></h1>
+            <p class="subtitle">Разгон проанализирует ваши данные из Яндекс Метрики и покажет: кто приходит, почему не покупает, и что сделать прямо сейчас</p>
+            <a href="/auth/login" class="btn-razgon">
+                Узнать причину →
+            </a>
+            <p class="price-note">Бесплатно · Результат за 5 минут</p>
+        </div>
+    </div>
+
+    <!-- Pain points -->
+    <section class="pains-b">
+        <div class="container">
+            <h2>Знакомые проблемы?</h2>
+            <p class="sub">Разгон отвечает на вопросы, которые мучают каждого владельца сайта</p>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="pain-card">
+                        <span class="emoji">💸</span>
+                        <h5>Трафик есть, продаж нет</h5>
+                        <p>Разгон покажет на каком шаге отваливаются посетители и что им мешает</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="pain-card">
+                        <span class="emoji">👻</span>
+                        <h5>На сайте никого нет</h5>
+                        <p>Узнаете какие запросы ищут люди и почему они находят конкурентов, а не вас</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="pain-card">
+                        <span class="emoji">🤷</span>
+                        <h5>Не знаю, что делать</h5>
+                        <p>Получите пошаговый план с приоритетами — от быстрых побед до долгосрочных задач</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Report preview -->
+    <section class="preview-b">
+        <div class="container">
+            <h2>Вот что вы получите</h2>
+            <p class="sub">Пример отчёта для реального сайта</p>
+            <div class="report-mock">
+                <h4>📊 Отчёт: climatehall.ru — кондиционеры во Владивостоке</h4>
+
+                <div class="mock-section">
+                    <div class="label">🎯 Цель: увеличить продажи через сайт</div>
+                    <div class="text">За 30 дней — <strong style="color:#ef4444">7 визитов</strong> и 0 заявок. Сайт функционально мёртв: не индексируется Яндексом, нет трафика из поиска.</div>
+                </div>
+
+                <div class="mock-section">
+                    <div class="label">📊 Рынок</div>
+                    <div class="text">Запрос «кондиционеры Владивосток» — <strong style="color:#22c55e">6 027</strong> в месяц. Ваши конкуренты получают тысячи кликов бесплатно.</div>
+                    <table class="mock-table">
+                        <tr><th>Запрос</th><th>Спрос/мес</th><th>Ваш сайт</th></tr>
+                        <tr><td>кондиционеры владивосток</td><td>6 027</td><td class="red">не в топе</td></tr>
+                        <tr><td>установка кондиционеров</td><td>910</td><td class="red">не в топе</td></tr>
+                        <tr><td>чистка кондиционера</td><td>206</td><td class="red">не в топе</td></tr>
+                    </table>
+                </div>
+
+                <div class="mock-section">
+                    <div class="label">💡 Что сделать (топ-5)</div>
+                    <div class="text">
+                        1. Добавить страницу «Кондиционеры Владивосток» под ключевые запросы<br>
+                        2. Зарегистрировать сайт в Яндекс Вебмастер<br>
+                        3. Создать отдельные страницы под монтаж и чистку<br>
+                        4. Добавить цены на основные услуги<br>
+                        5. Настроить рекламу в Яндексе на 6К запросов
+                    </div>
+                </div>
+
+                <div class="mock-section">
+                    <div class="label">🧪 Гипотезы</div>
+                    <div class="text">Если создать посадочную под «кондиционеры Владивосток» и запустить рекламу — можно получить 50-100 визитов в месяц при бюджете от 5 000 ₽</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="how-b">
+        <div class="container">
+            <h2>Как это работает</h2>
+            <p class="sub">3 шага — и вы знаете, что не так с сайтом</p>
+
+            <div class="how-step">
+                <div class="num">1</div>
+                <div>
+                    <h5>Подключите Яндекс</h5>
+                    <p>Авторизуйтесь через Яндекс — Разгон автоматически найдёт ваши счётчики Метрики и данные Вебмастера</p>
+                </div>
+            </div>
+            <div class="how-step">
+                <div class="num">2</div>
+                <div>
+                    <h5>Укажите цель</h5>
+                    <p>Выберите, что для вас важно: продажи, экономия на рекламе, эффективность сайта или понимание аудитории</p>
+                </div>
+            </div>
+            <div class="how-step">
+                <div class="num">3</div>
+                <div>
+                    <h5>Получите отчёт</h5>
+                    <p>Через 5 минут — конкретные цифры, причины проблем и пошаговый план действий. Можно обсудить детали в чате</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Compare -->
+    <section class="compare-b">
+        <div class="container">
+            <h2>SEO-аудит: агентство vs Разгон</h2>
+            <div class="compare-grid">
+                <div class="compare-col agency">
+                    <h5>🏢 Агентство</h5>
+                    <ul>
+                        <li>Ожидание 2-3 недели</li>
+                        <li>Стоимость от 50 000 ₽</li>
+                        <li>Общий шаблонный отчёт</li>
+                        <li>Нужно договариваться о встрече</li>
+                        <li>Рекомендации без конкретики</li>
+                    </ul>
+                </div>
+                <div class="compare-col razgon">
+                    <h5>⚡ Разгон</h5>
+                    <ul>
+                        <li>Результат за 5 минут</li>
+                        <li>Бесплатно</li>
+                        <li>На основе ваших данных из Метрики</li>
+                        <li>Работает прямо сейчас</li>
+                        <li>Конкретные шаги с приоритетами</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-b">
+        <div class="container">
+            <h2>Узнайте, почему сайт не продаёт</h2>
+            <p>Подключите Яндекс — получите конкретные рекомендации через 5 минут</p>
+            <a href="/auth/login" class="btn-white">
+                Начать бесплатно <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <div class="footer-b">
+        Разгон использует данные, которые вы уже собираете в Яндекс Метрике и Яндекс Вебмастере
+    </div>
+</div>
+{% endblock %}

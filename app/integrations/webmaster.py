@@ -42,17 +42,25 @@ def find_host_id(token, site_url):
     else:
         target_punycode = target
 
+    # Find matching hosts, prefer HTTPS
+    matches = []
     for h in hosts:
         for url_field in ["unicode_host_url", "ascii_host_url"]:
             host_url = h.get(url_field, "").replace("https://", "").replace("http://", "").rstrip("/").lower()
             if host_url == target or host_url == target_punycode:
-                # Prefer main mirror
-                mirror = h.get("main_mirror", {})
-                if mirror:
-                    return h["host_id"], mirror.get("host_id", h["host_id"])
-                return h["host_id"], h["host_id"]
+                matches.append(h)
 
-    return None, None
+    if not matches:
+        return None, None
+
+    # Prefer HTTPS, then main mirror
+    https_hosts = [h for h in matches if h["host_id"].startswith("https:")]
+    chosen = https_hosts[0] if https_hosts else matches[0]
+
+    mirror = chosen.get("main_mirror", {})
+    if mirror:
+        return chosen["host_id"], mirror.get("host_id", chosen["host_id"])
+    return chosen["host_id"], chosen["host_id"]
 
 
 def _host_base(token, host_id):

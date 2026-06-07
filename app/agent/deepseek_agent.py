@@ -102,7 +102,10 @@ METRIKA_DIMENSIONS_DOC = """
 Яндекс Метрика — metrics (ym:s:*):
 - ym:s:visits, ym:s:bounceRate, ym:s:pageDepth
 - ym:s:avgVisitDurationSeconds, ym:s:pageviews
-- ym:s:goal<GOAL_ID>conversionRate
+- ym:s:goal<GOAL_ID>conversionRate — ТОЛЬКО если GOAL_ID это число!
+
+ВАЖНО: не придумывай метрики! Используй ТОЛЬКО перечисленные выше.
+Если цель не числовая — не используй goal... метрики.
 
 Сортировка: "-" перед метрикой = по убыванию.
 """
@@ -235,6 +238,45 @@ TOOLS = [
                     }
                 },
                 "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_wordstat",
+            "description": "Яндекс Wordstat — статистика поисковых запросов. Возвращает топ похожих запросов и их частоту за 30 дней. Используй для оценки спроса, поиска новых ключевых слов, сравнения популярности фраз.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "phrase": {
+                        "type": "string",
+                        "description": "Ключевая фраза для анализа"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Количество фраз в ответе. По умолчанию 20",
+                        "default": 20
+                    }
+                },
+                "required": ["phrase"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "scrape_page",
+            "description": "Скрейпинг страницы сайта. Возвращает текстовое содержимое страницы (заголовки, текст, кнопки, формы). Используй для анализа реального контента сайта, проверки CTA, заголовков, структуры. Обязательно вызови для главной страницы анализируемого сайта.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "URL страницы для скрейпинга"
+                    }
+                },
+                "required": ["url"]
             }
         }
     },
@@ -382,34 +424,147 @@ def _query_metrika_api(token, counter_id, metrics, dimensions, filters=None, sor
     return result
 
 
+def _scrape_page(url):
+    """Scrape page content via Russian Web Proxy."""
+    proxy_url = "http://45.90.34.46:8000/get-page-title"
+    try:
+        resp = requests.post(proxy_url, json={"url": url}, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get("success"):
+            return {"error": f"Scrape failed: {data.get('error', 'unknown')}"}
+
+        from bs4 import BeautifulSoup
+        source = data.get("source", "")
+        if not source:
+            return {"error": "Empty source"}
+
+        soup = BeautifulSoup(source, "html.parser")
+
+        # Remove script, style, nav, footer
+        for tag in soup(["script", "style", "nav", "footer", "noscript"]):
+            tag.decompose()
+
+        result = {"url": url}
+
+        # Title
+        title = soup.find("title")
+        if title:
+            result["title"] = title.get_text(strip=True)
+
+        # Meta description
+        meta = soup.find("meta", attrs={"name": "description"})
+        if meta and meta.get("content"):
+            result["meta_description"] = meta["content"][:200]
+
+        # H1
+        h1 = soup.find("h1")
+        if h1:
+            result["h1"] = h1.get_text(strip=True)
+
+        # All H2s
+        h2s = [h.get_text(strip=True) for h in soup.find_all("h2")]
+        if h2s:
+            result["h2"] = h2s[:10]
+
+        # CTA buttons and links
+        buttons = []
+        for btn in soup.find_all(["button", "a"], class_=True):
+            cls = " ".join(btn.get("class", []))
+            if any(w in cls.lower() for w in ["btn", "cta", "button"]):
+                buttons.append(btn.get_text(strip=True)[:60])
+        if buttons:
+            result["cta_buttons"] = buttons[:10]
+
+        # Forms
+        forms = soup.find_all("form")
+        if forms:
+            result["forms_count"] = len(forms)
+
+        # Main text (limit to 2000 chars)
+        body = soup.find("body") or soup
+        text = body.get_text(separator=" ", strip=True)
+        # Clean up whitespace
+        import re
+        text = re.sub(r"\s+", " ", text)
+        result["text"] = text[:2000]
+
+        return result
+    except Exception as e:
+        logger.error(f"Scrape failed for {url}: {e}")
+        return {"error": str(e)}
+
+
+def _query_wordstat_api(phrase, limit=20):
+    """Query Yandex Wordstat API — top queries for a phrase (last 30 days)."""
+    import os
+    sys_path = os.path.expanduser("~/.openclaw/workspace/tools")
+    if sys_path not in os.sys.path:
+        os.sys.path.insert(0, sys_path)
+    from yandex_search import get_iam_token
+
+    iam_token, err = get_iam_token()
+    if err:
+        return {"error": f"IAM token error: {err}"}
+
+    folder_id = os.environ.get("YANDEX_FOLDER_ID", "b1gplve2ue70hj8270mh")
+    headers = {
+        "Authorization": f"Bearer {iam_token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        url = "https://searchapi.api.cloud.yandex.net/v2/wordstat/topRequests"
+        body = {
+            "phrase": phrase,
+            "numPhrases": str(limit),
+            "folderId": folder_id
+        }
+        resp = requests.post(url, headers=headers, json=body, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        results = [{"phrase": r.get("phrase", ""), "count": r.get("count", "0")} for r in data.get("results", [])[:limit]]
+        associations = [{"phrase": r.get("phrase", ""), "count": r.get("count", "0")} for r in data.get("associations", [])[:10]]
+        return {"total_count": data.get("totalCount", "0"), "top_queries": results, "associations": associations}
+    except Exception as e:
+        logger.error(f"Wordstat failed for '{phrase}': {e}")
+        return {"error": str(e)}
+
+
 def _query_webmaster_api(token, host_id, report_type, days=30, limit=20):
     """Execute a real Webmaster API query."""
     from datetime import datetime, timedelta
     from urllib.parse import quote
 
-    WM_API_URL = "https://api.webmaster.yandex.net/v4/user/hosts"
+    # Get user ID first
+    uid_resp = requests.get("https://api.webmaster.yandex.net/v4/user",
+        headers={"Authorization": f"OAuth {token}"})
+    uid_resp.raise_for_status()
+    uid = uid_resp.json()["user_id"]
 
     headers = {"Authorization": f"OAuth {token}"}
-
-    # host_id is used as-is in the path (Yandex format: https:xn--...:443)
-    # No encoding needed - requests handles it
 
     end = datetime.now()
     start = end - timedelta(days=days)
 
-    base = f"{WM_API_URL}/{host_id}"
+    base = f"https://api.webmaster.yandex.net/v4/user/{uid}/hosts/{host_id}"
 
     try:
         if report_type == "summary":
             resp = requests.get(f"{base}/summary", headers=headers)
+            if resp.status_code == 404:
+                return {"note": "Summary недоступен для этого хоста (возможно HTTP без HTTPS)"}
             resp.raise_for_status()
             return resp.json()
 
         elif report_type == "search_queries":
-            params = {"date_from": start.strftime("%Y-%m-%d"), "date_to": end.strftime("%Y-%m-%d"), "limit": limit}
-            resp = requests.get(f"{base}/search-queries", headers=headers, params=params)
+            resp = requests.get(f"{base}/search-queries/popular", headers=headers, params={"order_by": "TOTAL_SHOWS", "limit": limit})
+            if resp.status_code == 404:
+                return {"note": "Поисковые запросы недоступны для этого хоста"}
             resp.raise_for_status()
-            return {"queries": resp.json().get("queries", [])[:limit]}
+            queries = resp.json().get("queries", [])[:limit]
+            # Extract just query text for cleaner output
+            return {"queries": [q.get("query_text", q.get("query", "")) for q in queries]}
 
         elif report_type == "indexing":
             resp = requests.get(f"{base}/indexing-history", headers=headers)
@@ -439,15 +594,29 @@ def generate_report(data, objective=None, goal=None, token=None, counter_id=None
 """ + system_msg
     system_msg += f"\n\n{METRIKA_DIMENSIONS_DOC}"
     if goal_id:
-        system_msg += f"\n\nID цели Метрики: {goal_id}. Используй ym:s:goal{goal_id}conversionRate."
+        if goal_id.isdigit():
+            system_msg += f"\n\nID цели Метрики: {goal_id}. Используй метрику ym:s:goal{goal_id}conversionRate для конверсии."
+        else:
+            system_msg += f"\n\nЦель Метрики: {goal_id} (нечисловая, например ecommerce). Не используй ym:s:goal...conversionRate. Используй базовые метрики: visits, bounceRate, pageDepth, avgVisitDurationSeconds."
     if objective and objective in OBJECTIVE_PROMPTS:
         system_msg += f"\n\n{OBJECTIVE_PROMPTS[objective]}"
 
-    summary = _summarize_data(data) if data else "Начальный контекст отсутствует, используй инструменты."
+    # Don't pass data upfront — let agent use tools (true ReAct)
+    site_info = ""
+    if data:
+        # Only pass minimal context: site URL, counter ID, what's available
+        metrika_section = data.get("metrika", {})
+        webmaster_section = data.get("webmaster", {})
+        if metrika_section:
+            site_info += f"Метрика: данные доступны (счётчик {counter_id})\n"
+        if webmaster_section:
+            site_info += f"Вебмастер: данные доступны\n"
+    else:
+        site_info = "Начальный контекст отсутствует, используй инструменты."
 
     messages = [
         {"role": "system", "content": system_msg},
-        {"role": "user", "content": f"Данные сайта для анализа:\n\n{summary}"},
+        {"role": "user", "content": f"Проанализируй сайт. Доступные источники:\n{site_info}\n\nНачни с plan_analysis, затем запрашивай данные через инструменты."},
     ]
 
     # Dump full first request to file for debugging
@@ -462,6 +631,15 @@ def generate_report(data, objective=None, goal=None, token=None, counter_id=None
     with open("/tmp/deepseek_request.json", "w") as f:
         json.dump(initial_payload, f, ensure_ascii=False, indent=2)
     logger.info("Full request dumped to /tmp/deepseek_request.json")
+
+    # Track full ReAct trace
+    trace_log = []
+    def log_step(round_num, step_type, content):
+        entry = {"round": round_num, "type": step_type, "content": content[:500] if isinstance(content, str) else str(content)[:500]}
+        trace_log.append(entry)
+        # Write immediately so we can debug even if thread crashes
+        with open("/tmp/deepseek_trace.json", "w") as f:
+            json.dump(trace_log, f, ensure_ascii=False, indent=2)
 
     def _safe_parse_args(args_str):
         """Parse tool args with fallback for malformed JSON."""
@@ -527,6 +705,15 @@ def generate_report(data, objective=None, goal=None, token=None, counter_id=None
                     days=args.get("days", 30), limit=args.get("limit", 20),
                 )
 
+            elif name == "query_wordstat":
+                return _query_wordstat_api(
+                    phrase=args.get("phrase", ""),
+                    limit=args.get("limit", 20),
+                )
+
+            elif name == "scrape_page":
+                return _scrape_page(args.get("url", ""))
+
             elif name == "search_competitors":
                 return _search_competitors(
                     query=args.get("query", ""),
@@ -540,11 +727,13 @@ def generate_report(data, objective=None, goal=None, token=None, counter_id=None
             return {"error": str(e)}
 
     # ReAct loop
-    max_rounds = 8
+    max_rounds = 10
     for i in range(max_rounds):
-        # Show last message context while waiting for API
+        # Show last message context while waiting for API response
         if project_id and messages:
-            _update_step_from_messages(project_id, i+1, messages)
+            current = get_agent_step(project_id)
+            if current.get("round") != i+1:
+                _update_step_from_messages(project_id, i+1, messages)
         try:
             result = _call_deepseek(messages, tools=TOOLS)
         except Exception as e:
@@ -557,6 +746,7 @@ def generate_report(data, objective=None, goal=None, token=None, counter_id=None
         # No tool calls = final answer
         if not msg.get("tool_calls"):
             logger.info(f"ReAct done in {i+1} rounds: {len(msg['content'])} chars")
+            log_step(i+1, "final_answer", msg["content"])
             if project_id:
                 snippet = msg["content"].replace("\n", " ").strip()[:1000]
                 if len(msg["content"]) > 1000:
@@ -589,20 +779,35 @@ def generate_report(data, objective=None, goal=None, token=None, counter_id=None
                 elif tool_name == "search_competitors":
                     q = args.get("query", "")[:50]
                     set_agent_step(project_id, i+1, f"🔎 Поиск конкурентов: {q}")
+                elif tool_name == "query_wordstat":
+                    ph = args.get("phrase", "")[:40]
+                    set_agent_step(project_id, i+1, f"📈 Wordstat: {ph}")
+                elif tool_name == "scrape_page":
+                    u = args.get("url", "")[:50]
+                    set_agent_step(project_id, i+1, f"🕷️ Скрейпинг: {u}")
                 else:
                     set_agent_step(project_id, i+1, f"⚙️ {tool_name}")
             
             tool_result = _exec_tool(tool_name, tool_args_str)
             logger.info(f"  Tool {tool_name} -> {len(json.dumps(tool_result, ensure_ascii=False))} chars")
+            log_step(i+1, f"tool:{tool_name}", tool_result)
             messages.append({
                 "role": "tool",
                 "tool_call_id": tc["id"],
                 "content": json.dumps(tool_result, ensure_ascii=False) if isinstance(tool_result, (dict, list)) else str(tool_result),
             })
 
+        # Compress old messages after round 5 to save context
+        if i >= 5 and len(messages) > 10:
+            messages = _compress_messages(messages)
+
     # Force final answer
     if project_id:
         set_agent_step(project_id, max_rounds, "📝 Генерирую финальный отчёт...")
+    with open("/tmp/deepseek_trace.json", "w") as f:
+        json.dump(trace_log, f, ensure_ascii=False, indent=2)
+        logger.info(f"Trace dumped to /tmp/deepseek_trace.json ({len(trace_log)} steps)")
+
     messages.append({"role": "user", "content": "Данных достаточно. Составь финальный отчёт: 5 разделов (🎯 Цель | 📊 Рынок | 🔍 Причины | 💡 Действия ≤7 пунктов | 🧪 Гипотезы 3-5). Каждый раздел 3-5 предложений + 1 таблица. Без воды."})
     try:
         result = _call_deepseek(messages)
@@ -668,6 +873,69 @@ def _pct(val):
     if val is None:
         return "—"
     return f"{val:.1f}%"
+
+
+def _compress_messages(messages, keep_recent=6):
+    """Compress old messages: keep assistant reasoning + tool summaries, drop raw data rows."""
+    if len(messages) <= keep_recent + 1:
+        return messages
+    
+    system_msgs = [m for m in messages if m.get("role") == "system"]
+    non_system = [m for m in messages if m.get("role") != "system"]
+    
+    old_msgs = non_system[:-keep_recent]
+    recent_msgs = non_system[-keep_recent:]
+    
+    compressed_old = []
+    for m in old_msgs:
+        role = m.get("role", "")
+        content_str = m.get("content", "")
+        
+        if role == "assistant":
+            # Keep reasoning, truncate if very long
+            if len(content_str) > 800:
+                compressed_old.append({"role": "assistant", "content": content_str[:800] + "\n...[обрезано]"})
+            else:
+                compressed_old.append(m)
+        
+        elif role == "tool":
+            # Keep tool result but truncate raw data
+            try:
+                data = json.loads(content_str)
+                compressed_data = _truncate_tool_data(data, max_rows=5)
+                compressed_old.append({"role": "tool", "tool_call_id": m.get("tool_call_id", ""), "content": json.dumps(compressed_data, ensure_ascii=False)})
+            except:
+                compressed_old.append({"role": "tool", "tool_call_id": m.get("tool_call_id", ""), "content": content_str[:500]})
+        
+        else:
+            compressed_old.append(m)
+    
+    result = system_msgs + compressed_old + recent_msgs
+    old_chars = sum(len(m.get("content","")) for m in old_msgs)
+    new_chars = sum(len(m.get("content","")) for m in compressed_old)
+    logger.info(f"Compressed messages: {len(messages)} msgs, old chars: {old_chars} -> {new_chars}")
+    return result
+
+
+def _truncate_tool_data(data, max_rows=5):
+    """Truncate long lists/rows in tool results, keep structure and totals."""
+    if isinstance(data, list):
+        if len(data) <= max_rows:
+            return data
+        return data[:max_rows] + [{"...": f"ещё {len(data) - max_rows} записей"}]
+    
+    if isinstance(data, dict):
+        result = {}
+        for k, v in data.items():
+            if isinstance(v, list) and len(v) > max_rows:
+                result[k] = v[:max_rows] + [{"...": f"ещё {len(v) - max_rows} записей"}]
+            elif isinstance(v, dict):
+                result[k] = _truncate_tool_data(v, max_rows)
+            else:
+                result[k] = v
+        return result
+    
+    return data
 
 
 def _compress_metrika_section(section_name, rows, totals, metrics_names=None):

@@ -10,6 +10,11 @@ def promo():
     return render_template("promo_v4.html")
 
 
+@main_bp.route("/v5")
+def promo_v5():
+    return render_template("promo_v5.html")
+
+
 @main_bp.route("/dashboard")
 def dashboard():
     user_id = session.get("user_id")

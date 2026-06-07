@@ -41,9 +41,14 @@
     <div class="container">
         <a href="/dashboard" class="text-decoration-none mb-3 d-inline-block" style="color:var(--text-secondary)">← Назад к проектам</a>
         <h2 class="mb-1" style="font-weight:700;">{{ project.site_name }}</h2>
-        <p class="mb-4" style="color:var(--text-secondary);font-size:0.9rem;">
+        <p class="mb-1" style="color:var(--text-secondary);font-size:0.9rem;">
             {{ start_date }} — {{ end_date }} (30 дней) · Цель: {{ goal_name }} · Задача: {{ objective_label }}
         </p>
+        {% if project.comment %}
+        <p class="mb-4" style="color:var(--accent);font-size:0.85rem;font-style:italic;">
+            💬 {{ project.comment }}
+        </p>
+        {% endif %}
 
         <!-- Main spinner -->
         <!-- Content always visible -->
@@ -393,15 +398,17 @@ async function loadRawData() {
             if (key === 'day_hour') {
                 for (const [subKey, subTitle] of [['by_day', 'По дням'], ['by_hour', 'По часам']]) {
                     const sub = section[subKey];
-                    if (sub && sub.rows) {
-                        html += buildTable(subTitle, sub.rows, ['Параметр', 'Визиты', 'Польз.', 'Отказы%', 'Глубина', 'Ср.длит.(с)', 'Цель', 'Конверсия%']);
+                    if (sub && sub.rows && sub.rows.length > 0) {
+                        const h = buildDynamicHeaders(sub.rows[0]);
+                        html += buildTable(subTitle, sub.rows, h);
                     }
                 }
             } else if (key === 'demographics') {
                 for (const [subKey, subTitle] of [['by_sex', 'По полу'], ['by_age', 'По возрасту']]) {
                     const sub = section[subKey];
-                    if (sub && sub.rows) {
-                        html += buildTable(subTitle, sub.rows, ['Параметр', 'Визиты', 'Польз.', 'Отказы%', 'Глубина', 'Ср.длит.(с)', 'Цель', 'Конверсия%']);
+                    if (sub && sub.rows && sub.rows.length > 0) {
+                        const h = buildDynamicHeaders(sub.rows[0]);
+                        html += buildTable(subTitle, sub.rows, h);
                     }
                 }
             } else if (Array.isArray(section)) {
@@ -411,11 +418,11 @@ async function loadRawData() {
                     html += `<tr><td>${s.step || ''}</td><td>${s.value}</td><td>${s.conversion || ''}%</td></tr>`;
                 }
                 html += '</tbody></table></div>';
-            } else if (section.rows) {
-                const headers = (key === 'popular_pages')
+            } else if (section.rows && section.rows.length > 0) {
+                const h = (key === 'popular_pages')
                     ? ['Страница', 'Просмотры']
-                    : ['Параметр', 'Визиты', 'Польз.', 'Отказы%', 'Глубина', 'Ср.длит.(с)', 'Цель', 'Конверсия%'];
-                html += buildTable(title, section.rows, headers);
+                    : buildDynamicHeaders(section.rows[0]);
+                html += buildTable(title, section.rows, h);
             }
         }
 
@@ -453,6 +460,15 @@ async function loadRawData() {
 
         container.innerHTML = html || '<p style="color:var(--text-secondary)">Нет данных</p>';
     } catch (e) { console.error('Raw data error', e); }
+}
+
+function buildDynamicHeaders(sampleRow) {
+    const dimNames = {'dimensions': 'Параметр'};
+    const metricNames = ['Визиты', 'Просмотры', 'Отказы%', 'Глубина', 'Ср.длит.(с)', 'Польз.', 'Конверсия%'];
+    const headers = [];
+    for (let i = 0; i < sampleRow.dimensions.length; i++) headers.push(i === 0 ? 'Параметр' : 'Параметр ' + (i+1));
+    for (let i = 0; i < sampleRow.metrics.length; i++) headers.push(metricNames[i] || 'Метрика ' + (i+1));
+    return headers;
 }
 
 function buildTable(title, rows, headers) {
