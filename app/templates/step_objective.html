@@ -68,6 +68,7 @@ document.getElementById('nextBtn').addEventListener('click', () => {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Создаю...';
 
+    ym(109713672, 'reachGoal', 'step_goal');
     fetch('/setup/api/objective', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},

@@ -62,6 +62,7 @@ document.getElementById('nextBtn').addEventListener('click', () => {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({goal_id: g.value})
     }).then(() => {
+        ym(109713672, 'reachGoal', 'project_create');
         return fetch('/api/projects', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},

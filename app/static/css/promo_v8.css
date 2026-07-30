@@ -1,0 +1,411 @@
+.navbar-custom { display: none !important; }
+    :root {
+        --brand-dark: #0a0e17;
+        --brand-purple: #0a0e17;
+        --brand-violet: #1a2035;
+        --brand-orange: #00d4ff;
+        --brand-pink: #0099ff;
+    }
+
+    /* Hero — Cyber Racing */
+    .hero-v4 {
+        position: relative;
+        background: #f0f4f8;
+        overflow: hidden;
+        padding: 60px 0 80px;
+        text-align: center;
+        color: #0a0e17;
+    }
+    /* Racing stripe left */
+    .hero-v4::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        background:
+            linear-gradient(90deg,
+                #00d4ff 0px, #00d4ff 4px,
+                transparent 4px, transparent 12px,
+                #00d4ff 12px, #00d4ff 14px,
+                transparent 14px
+            ),
+            linear-gradient(90deg,
+                transparent calc(100% - 14px), transparent calc(100% - 12px),
+                #00d4ff calc(100% - 12px), #00d4ff calc(100% - 4px),
+                transparent calc(100% - 4px), transparent calc(100% - 0px)
+            );
+        opacity: 0.6;
+    }
+    /* Bottom tech line */
+    .hero-v4::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #00d4ff 0%, #0099ff 50%, #00d4ff 100%);
+        box-shadow: 0 0 20px rgba(0,212,255,0.5);
+    }
+    .hero-v4 .container { position: relative; z-index: 1; }
+    .hero-v4 .logo-wrap img {
+        width: 80px;
+        height: 80px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        margin-bottom: 1rem;
+    }
+    .hero-tags-v5 {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .htag {
+        background: #0a0e17;
+        border: none;
+        border-radius: 0;
+        padding: 0.35rem 1rem;
+        font-size: 0.78rem;
+        color: #00d4ff;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+    .hero-v4 h1 {
+        font-size: 4rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+        color: #0a0e17;
+    }
+    .hero-v4 h1 span {
+        color: #00d4ff;
+    }
+    .hero-v4 .subtitle {
+        font-size: 1.2rem;
+        color: rgba(10,14,23,0.55);
+        max-width: 480px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.6;
+    }
+    .btn-razgon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: #0a0e17;
+        color: #00d4ff;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 0.9rem 2.5rem;
+        border-radius: 0;
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: all 0.3s ease;
+        border: 2px solid #00d4ff;
+        box-shadow: 0 0 20px rgba(0,212,255,0.2);
+    }
+    .btn-razgon:hover {
+        color: #0a0e17;
+        background: #00d4ff;
+        transform: translateY(-2px);
+        box-shadow: 0 0 30px rgba(0,212,255,0.4);
+    }
+            radial-gradient(ellipse 80% 60% at 20% 80%, rgba(10,14,23,0.25) 0%, transparent 70%),
+            radial-gradient(ellipse 60% 50% at 80% 20%, rgba(0,212,255,0.15) 0%, transparent 70%),
+            radial-gradient(ellipse 90% 40% at 50% 100%, rgba(26,32,53,0.2) 0%, transparent 60%);
+    }
+    .hero-v4 .container { position: relative; z-index: 1; }
+    .hero-v4 .logo-wrap img {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(10,14,23,0.4);
+        margin-bottom: 1rem;
+    }
+    .hero-tags-v5 {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    /* .htag already defined above */
+    .hero-v4 h1 {
+        font-size: 3.2rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #fff 30%, var(--brand-violet) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hero-v4 .subtitle {
+        font-size: 1.2rem;
+        color: rgba(10,14,23,0.55);
+        max-width: 480px;
+        margin: 0 auto 2.5rem;
+        line-height: 1.6;
+    }
+    .btn-razgon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: linear-gradient(135deg, var(--brand-purple), var(--brand-orange));
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.1rem;
+        padding: 0.9rem 2.5rem;
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 30px rgba(10,14,23,0.35);
+    }
+    .btn-razgon:hover {
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 45px rgba(10,14,23,0.5);
+    }
+
+    .hero-steps-v4 {
+        list-style: none;
+        padding: 0;
+        margin: 0 auto 2rem;
+        max-width: 460px;
+        text-align: left;
+    }
+    .hero-steps-v4 li {
+        padding: 0.4rem 0 0.4rem 1.5rem;
+        position: relative;
+        color: rgba(10,14,23,0.7);
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .hero-steps-v4 li::before {
+        content: '→';
+        position: absolute;
+        left: 0;
+        color: #00d4ff;
+        font-weight: 700;
+    }
+    .how-v4 {
+        padding: 80px 0;
+        background: #f0f4f8;
+    }
+    .how-v4 h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 3rem;
+        color: var(--brand-dark);
+    }
+    .step-v4 {
+        text-align: center;
+        padding: 1.5rem;
+    }
+    .step-v4 .num {
+        width: 56px; height: 56px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 1rem;
+    }
+    .step-v4:nth-child(1) .num { background: #0a0e17; }
+    .step-v4:nth-child(2) .num { background: #1a2035; }
+    .step-v4:nth-child(3) .num { background: #00d4ff; color: #0a0e17; }
+    .step-v4 h5 { font-weight: 600; color: #0a0e17; margin-bottom: 0.4rem; }
+    .step-v4 p { color: rgba(10,14,23,0.55); font-size: 0.9rem; line-height: 1.6; }
+
+    /* Plan section — dark racing */
+    .plan-v4 {
+        padding: 80px 0;
+        background: #0a0e17;
+        color: #fff;
+    }
+    .plan-v4 h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+    .plan-v4 .sub {
+        text-align: center;
+        color: rgba(255,255,255,0.45);
+        margin-bottom: 3rem;
+    }
+    .plan-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-left: 3px solid #00d4ff;
+        border-radius: 0;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    .plan-item:hover {
+        background: rgba(0,212,255,0.04);
+        border-left-color: #0099ff;
+    }
+    .plan-item .check {
+        flex-shrink: 0;
+        width: 32px; height: 32px;
+        border-radius: 0;
+        background: #00d4ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        margin-top: 2px;
+    }
+    .plan-item .text h6 {
+        font-weight: 600;
+        margin-bottom: 0.15rem;
+        font-size: 0.95rem;
+    }
+    .plan-item .text p {
+        color: rgba(255,255,255,0.45);
+        font-size: 0.82rem;
+        margin: 0;
+    }
+
+    /* Speed banner */
+    .speed-v4 {
+        padding: 50px 0;
+        background: #0a0e17;
+        text-align: center;
+        color: #fff;
+        border-top: 4px solid #00d4ff;
+        border-bottom: 4px solid #00d4ff;
+    }
+    .speed-v4 h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.02em;
+    }
+    .speed-v4 p {
+        font-size: 1rem;
+        color: rgba(255,255,255,0.65);
+        max-width: 520px;
+        margin: 0 auto;
+    }
+
+    /* Audience */
+    .audience-v4 {
+        padding: 80px 0;
+        background: #f0f4f8;
+    }
+    .audience-v4 h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 3rem;
+        color: #0a0e17;
+    }
+    .aud-card {
+        background: #fff;
+        border-left: 4px solid #00d4ff;
+        border-radius: 0;
+        padding: 2rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        height: 100%;
+    }
+    .aud-card:hover {
+        transform: translateX(4px);
+        box-shadow: 0 4px 20px rgba(0,212,255,0.15);
+        border-left-color: #0099ff;
+    }
+    .aud-card .emoji { font-size: 2rem; margin-bottom: 1rem; display: block; }
+    .aud-card h5 { font-weight: 700; color: #0a0e17; margin-bottom: 0.5rem; }
+    .aud-card p { color: rgba(10,14,23,0.55); font-size: 0.9rem; line-height: 1.6; }
+
+    /* Chat section — dark */
+    .chat-v4 {
+        padding: 80px 0;
+        background: #0a0e17;
+        color: #fff;
+    }
+    .chat-v4 h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+    .chat-v4 .sub {
+        text-align: center;
+        color: rgba(255,255,255,0.45);
+        margin-bottom: 3rem;
+    }
+    .chat-topic {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-top: 3px solid #00d4ff;
+        border-radius: 0;
+        padding: 2rem;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    .chat-topic:hover {
+        background: rgba(0,212,255,0.04);
+        transform: translateY(-4px);
+    }
+    .chat-topic .icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        display: block;
+    }
+    .chat-topic h5 { font-weight: 600; margin-bottom: 0.4rem; font-size: 1.05rem; }
+    .chat-topic p { color: rgba(255,255,255,0.45); font-size: 0.85rem; line-height: 1.5; }
+
+    /* Footer / powered by */
+    .powered-v4 {
+        padding: 30px 0;
+        background: #0a0e17;
+        text-align: center;
+        color: rgba(255,255,255,0.35);
+        font-size: 0.85rem;
+        border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .powered-v4 span {
+        color: #00d4ff;
+        font-weight: 500;
+    }
+
+    /* CTA */
+    .cta-v4 {
+        padding: 80px 0;
+        background: #f0f4f8;
+        text-align: center;
+        color: #0a0e17;
+        position: relative;
+        overflow: hidden;
+    }
+    .cta-v4::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #00d4ff 0%, #0099ff 50%, #00d4ff 100%);
+    }
+    .cta-v4 .container { position: relative; z-index: 1; }
+    .cta-v4 h2 { font-size: 2rem; font-weight: 700; margin-bottom: 0.75rem; color: #0a0e17; }
+    .cta-v4 p { color: rgba(10,14,23,0.55); margin-bottom: 2rem; font-size: 1.1rem; }
+
+    @media (max-width: 768px) {
+        .hero-v4 h1 { font-size: 2.2rem; }
+        .hero-v4 .logo-wrap img { width: 72px; height: 72px; }
+    }

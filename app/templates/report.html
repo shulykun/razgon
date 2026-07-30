@@ -15,10 +15,12 @@
 #reportContent strong { font-weight: 600; }
 #reportContent em { font-style: italic; }
 #reportContent hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
-#reportContent table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.9rem; }
-#reportContent th { background: var(--surface); font-weight: 600; text-align: left; padding: 0.5rem 0.6rem; border-bottom: 2px solid var(--border); }
-#reportContent td { padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); }
-#reportContent tr:hover td { background: var(--surface); }
+#reportContent table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.88rem; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.02); }
+#reportContent th { background: rgba(0,212,255,0.06); font-weight: 600; text-align: left; padding: 0.6rem 0.8rem; border-bottom: 2px solid rgba(0,212,255,0.15); color: var(--text-primary); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
+#reportContent td { padding: 0.5rem 0.8rem; border-bottom: 1px solid rgba(0,0,0,0.04); color: var(--text-secondary); }
+#reportContent tr:last-child td { border-bottom: none; }
+#reportContent tr:hover td { background: rgba(0,212,255,0.04); }
+#reportContent td strong { color: var(--text-primary); }
 #reportContent code { background: var(--surface); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
 #reportContent pre { background: var(--surface); padding: 0.8rem; border-radius: 8px; overflow-x: auto; }
 #reportContent pre code { background: none; padding: 0; }
@@ -29,7 +31,7 @@
 .report-markdown p { margin: 0.2rem 0; }
 .report-markdown ul,.report-markdown ol { padding-left: 1.2rem; margin: 0.2rem 0; }
 .report-markdown table { width: 100%; border-collapse: collapse; margin: 0.4rem 0; font-size: 0.85rem; }
-.report-markdown th { font-weight: 600; text-align: left; padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border); }
+.report-markdown th { font-weight: 600; text-align: left; padding: 0.3rem 0.4rem; border-bottom: 1px solid rgba(0,212,255,0.2); background: rgba(0,212,255,0.04); }
 .report-markdown td { padding: 0.25rem 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .report-markdown code { background: var(--surface); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.85em; }
 .report-markdown strong { font-weight: 600; }
@@ -54,15 +56,11 @@
         <!-- Content always visible -->
         <div id="mainContent">
         <!-- Charts dropdown -->
-        <div class="accordion accordion-custom mb-4" id="chartsAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#chartsCollapse">
-                        <i class="bi bi-bar-chart me-2"></i>Графики
-                    </button>
-                </h2>
-                <div id="chartsCollapse" class="accordion-collapse collapse">
-                    <div class="accordion-body">
+        <div class="rz-card mb-4">
+            <h6 style="cursor:pointer" onclick="document.getElementById('chartsBody').style.display = document.getElementById('chartsBody').style.display === 'none' ? '' : 'none'; this.querySelector('.chevron').classList.toggle('bi-chevron-down'); this.querySelector('.chevron').classList.toggle('bi-chevron-up'); ym(109713672, 'reachGoal', 'expand_charts')">
+                <i class="bi bi-bar-chart me-2"></i>Графики <i class="bi bi-chevron-down float-end chevron" style="font-size:0.7rem"></i>
+            </h6>
+            <div id="chartsBody" style="display:none">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="rz-card"><h6>Трафик по дням недели</h6>
@@ -125,30 +123,24 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
             </div>
         </div>
 
         <!-- Raw data dropdown -->
-        <div class="accordion accordion-custom mb-4" id="dataAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#dataCollapse">
-                        <i class="bi bi-table me-2"></i>Данные для агента
-                    </button>
-                </h2>
-                <div id="dataCollapse" class="accordion-collapse collapse">
-                    <div class="accordion-body" id="rawDataContent">
-                        <div class="text-center py-3" style="color:var(--text-secondary)">Загрузка...</div>
-                    </div>
-                </div>
+        <div class="rz-card mb-4">
+            <h6 style="cursor:pointer" onclick="document.getElementById('dataBody').style.display = document.getElementById('dataBody').style.display === 'none' ? '' : 'none'; this.querySelector('.chevron').classList.toggle('bi-chevron-down'); this.querySelector('.chevron').classList.toggle('bi-chevron-up'); ym(109713672, 'reachGoal', 'expand_data')">
+                <i class="bi bi-table me-2"></i>Данные для агента <i class="bi bi-chevron-down float-end chevron" style="font-size:0.7rem"></i>
+            </h6>
+            <div id="dataBody" style="display:none">
+                        <div id="rawDataContent">
+                            <div class="text-center py-3" style="color:var(--text-secondary)">Загрузка...</div>
+                        </div>
             </div>
         </div>
 
         <!-- AI Report -->
         <div class="rz-card mb-4">
-            <h6><i class="bi bi-robot me-2"></i>AI-анализ <button id="toggleReportBtn" onclick="toggleReport()" class="btn btn-outline-secondary btn-sm float-end" style="font-size:0.75rem;padding:0.15rem 0.5rem"><i class="bi bi-chevron-up"></i></button></h6>
+            <h6 style="cursor:pointer" onclick="toggleReport(); ym(109713672, 'reachGoal', 'expand_report')"><i class="bi bi-robot me-2"></i>AI-анализ <i id="reportChevron" class="bi bi-chevron-up float-end" style="font-size:0.7rem"></i></h6>
             <div id="reportContent" style="line-height:1.7;font-size:0.95rem;"></div>
         </div>
 
@@ -189,7 +181,17 @@ async function pollUntilReady() {
                                 let refreshBtn = reportSource === 'deepseek'
                     ? '<button onclick="deepseekReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button> <button onclick="retryReport()" class="btn btn-outline-secondary btn-sm mt-3">\uD83D\uDCE1 Внешний агент</button>'
                     : '<button onclick="retryReport()" class="btn btn-outline-primary btn-sm mt-3">Обновить отчёт</button>';
-                document.getElementById('reportContent').innerHTML = (typeof marked !== 'undefined' ? marked.parse(data.text) : data.text.replace(/\n/g, '<br>')) + '<hr>' + refreshBtn;
+                let html = (typeof marked !== 'undefined' ? marked.parse(data.text) : data.text.replace(/\n/g, '<br>'));
+                // Validation badge
+                if (data.validation_score > 0) {
+                    const score = data.validation_score;
+                    const stars = '★'.repeat(score) + '☆'.repeat(5 - score);
+                    const color = score >= 4 ? '#22c55e' : score >= 3 ? '#eab308' : '#ef4444';
+                    const issues = (data.validation_issues || []).map(i => `<span style="background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:4px;font-size:0.8rem">${i}</span>`).join(' ');
+                    html += `<div style="margin-top:1.5rem;padding:0.8rem 1rem;border-radius:12px;background:var(--surface);border:1px solid var(--border);font-size:0.85rem;color:var(--text-secondary)"><span style="color:${color};font-size:1.1rem">${stars}</span> <span style="font-weight:600">Качество отчёта: ${score}/5</span>${issues ? '<div style="margin-top:0.4rem;display:flex;flex-wrap:wrap;gap:4px">' + issues + '</div>' : ''}</div>`;
+                }
+                html += '<hr>' + refreshBtn;
+                document.getElementById('reportContent').innerHTML = html;
             } else {
                 document.getElementById('reportContent').innerHTML = `<p style="color:var(--danger)">${data.text}</p><button onclick="retryReport()" class="btn btn-primary mt-3">\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c</button>`;
             }
@@ -204,6 +206,7 @@ async function pollUntilReady() {
 }
 
 async function retryReport() {
+    ym(109713672, 'reachGoal', 'report_retry');
     document.getElementById('reportContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border rz-spinner" role="status" style="width:2rem;height:2rem;"></div><p class="mt-2">\u041e\u0442\u043f\u0440\u0430\u0432\u043b\u044f\u0435\u043c \u0437\u0430\u043d\u043e\u0432\u043e...</p></div>';
     try {
         await fetch(`/api/projects/${projectId}/retry`, { method: 'POST' });
@@ -505,6 +508,7 @@ function addMessage(role, text) {
 async function sendMessage() {
     const text = chatInput.value.trim();
     if (!text) return;
+    ym(109713672, 'reachGoal', 'chat_send');
     chatInput.value = '';
     addMessage('user', text);
     const loaderId = 'chat-loader-' + Date.now();
@@ -547,19 +551,22 @@ loadChatHistory();
 let reportCollapsed = false;
 function toggleReport() {
     const el = document.getElementById('reportContent');
-    const btn = document.getElementById('toggleReportBtn');
+    const chevron = document.getElementById('reportChevron');
     reportCollapsed = !reportCollapsed;
     if (reportCollapsed) {
         el.classList.add('collapsed');
-        btn.innerHTML = '<i class="bi bi-chevron-down"></i>';
+        chevron.classList.remove('bi-chevron-up');
+        chevron.classList.add('bi-chevron-down');
     } else {
         el.classList.remove('collapsed');
-        btn.innerHTML = '<i class="bi bi-chevron-up"></i>';
+        chevron.classList.remove('bi-chevron-down');
+        chevron.classList.add('bi-chevron-up');
     }
 }
 
 async function clearChat() {
     if (!confirm('Очистить историю чата?')) return;
+    ym(109713672, 'reachGoal', 'chat_clear');
     try {
         await fetch(`/api/projects/${projectId}/chat-clear`, { method: 'POST' });
         chatBox.innerHTML = '<div class="text-center py-3" style="color:var(--text-secondary)">Начните диалог с AI-агентом</div>';

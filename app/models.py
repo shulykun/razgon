@@ -36,6 +36,9 @@ class Report(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False)
     raw_data = db.Column(db.Text)  # JSON string with Metrika + Webmaster data
     ai_report_text = db.Column(db.Text)
+    validation_score = db.Column(db.Integer, default=0)
+    validation_issues = db.Column(db.Text)  # JSON array of issues
+    agent_trace = db.Column(db.Text)  # JSON: full agent trace (tools, reasoning)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -46,6 +49,23 @@ class ChatMessage(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False)
     role = db.Column(db.String(16), nullable=False)  # "user" or "assistant"
     text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ChatArchive(db.Model):
+    __table_args__ = {'sqlite_autoincrement': True}
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("project.id"), nullable=False)
+    messages = db.Column(db.Text, nullable=False)  # JSON array of archived messages
+    cleared_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Feedback(db.Model):
+    __table_args__ = {'sqlite_autoincrement': True}
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128))
+    email = db.Column(db.String(128))
+    message = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 

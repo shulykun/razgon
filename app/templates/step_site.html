@@ -30,6 +30,7 @@
 document.getElementById('nextBtn').addEventListener('click', () => {
     const r = document.querySelector('input[name="counter"]:checked');
     if (!r) return alert('Выберите сайт');
+    ym(109713672, 'reachGoal', 'step_site');
     fetch('/setup/api/counter', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},

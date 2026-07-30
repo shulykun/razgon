@@ -3,6 +3,7 @@ import logging
 import threading
 import requests as http_requests
 from flask import Blueprint, request, jsonify, session
+from app.models import User, Project
 
 OBJECTIVE_LABELS = {"sales": "Увеличить охват и продажи", "optimize": "Сэкономить на рекламе, не потеряв доход", "efficiency": "Поднять эффективность сайта", "audience": "Понять свою аудиторию"}
 STANDARD_OBJECTIVES = set(OBJECTIVE_LABELS.keys())
@@ -417,53 +418,8 @@ def raw_data(project_id):
 
 @api_bp.route("/agent/callback", methods=["POST"])
 def agent_callback():
-    """Receive async callback from AI agent."""
-    data = request.json or {}
-    project_id = data.get("project_id")
-    msg_type = data.get("type")
-    message = data.get("message", {})
-    text = message.get("text", "")
-
-    if not project_id:
-        return jsonify({"ok": False, "error": "project_id required"}), 400
-
-    project = Project.query.filter_by(id=int(project_id)).first()
-    if not project:
-        return jsonify({"ok": False, "error": "project not found"}), 404
-
-    if msg_type == "report":
-        # Save report text
-        report = Report.query.filter_by(project_id=project.id).order_by(Report.id.desc()).first()
-        if report:
-            report.ai_report_text = text
-            db.session.commit()
-        # Save project_context if provided
-        pc = data.get("project_context")
-        if pc and pc.get("context"):
-            project.project_context = json.dumps(pc, ensure_ascii=False)
-            db.session.commit()
-        logger.info(f"Agent callback: report for project {project_id}")
-
-    elif msg_type == "message":
-        # Save chat message
-        chat = ChatMessage(project_id=project.id, role="assistant", text=text)
-        db.session.add(chat)
-        db.session.commit()
-        logger.info(f"Agent callback: message for project {project_id}")
-
-    elif msg_type == "error":
-        # Save error as report or chat
-        report = Report.query.filter_by(project_id=project.id).order_by(Report.id.desc()).first()
-        if report and not report.ai_report_text:
-            report.ai_report_text = f"Ошибка агента: {text}"
-            db.session.commit()
-        else:
-            chat = ChatMessage(project_id=project.id, role="assistant", text=f"⚠️ Ошибка: {text}")
-            db.session.add(chat)
-            db.session.commit()
-        logger.warning(f"Agent callback: error for project {project_id}: {text}")
-
-    return jsonify({"ok": True})
+    """Disabled — DeepSeek agent is primary."""
+    return jsonify({"ok": True, "note": "Keng callback disabled"})
 
 
 @api_bp.route("/projects/<int:project_id>/chat", methods=["POST"])
@@ -508,8 +464,16 @@ def chat_history(project_id):
 
 @api_bp.route("projects/<int:project_id>/chat-clear", methods=["POST"])
 def chat_clear(project_id):
-    ChatMessage.query.filter_by(project_id=project_id).delete()
-    db.session.commit()
+    msgs = ChatMessage.query.filter_by(project_id=project_id).order_by(ChatMessage.id).all()
+    if msgs:
+        from app.models import ChatArchive
+        archive = ChatArchive(
+            project_id=project_id,
+            messages=json.dumps([{"role": m.role, "text": m.text, "created": m.created_at.isoformat() if m.created_at else None} for m in msgs], ensure_ascii=False)
+        )
+        db.session.add(archive)
+        ChatMessage.query.filter_by(project_id=project_id).delete()
+        db.session.commit()
     return jsonify({"status": "ok"})
 
 
@@ -624,6 +588,8 @@ def project_status(project_id):
         "ready": ready,
         "error": report.ai_report_text.startswith("Ошибка") if report.ai_report_text else False,
         "text": report.ai_report_text or "",
+        "validation_score": report.validation_score or 0,
+        "validation_issues": json.loads(report.validation_issues) if report.validation_issues else [],
     })
 
 
@@ -641,3 +607,18 @@ def project_logs(project_id):
         "duration_ms": l.duration_ms,
         "created_at": l.created_at.isoformat(),
     } for l in logs])
+
+
+@api_bp.route("/feedback", methods=["POST"])
+def submit_feedback():
+    data = request.json or {}
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip()
+    message = data.get("message", "").strip()
+    if not message:
+        return jsonify({"ok": False, "error": "Сообщение обязательно"}), 400
+    from app.models import Feedback
+    fb = Feedback(name=name or None, email=email or None, message=message)
+    db.session.add(fb)
+    db.session.commit()
+    return jsonify({"ok": True})

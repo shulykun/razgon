@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 API_URL = "https://api.deepseek.com/chat/completions"
-API_KEY = "sk-6ff99adb03a144a0996d4ecc8b349a6a"
+API_KEY = "sk-a924be1d00154f9c83befddbd141b7fa"
 MODEL = "deepseek-v4-flash"
 
 # Track current agent step per project
@@ -51,22 +51,22 @@ SYSTEM_PROMPT = """Ты — аналитик цифрового маркетин
 
 ## СТРУКТУРА ФИНАЛЬНОГО ОТЧЁТА
 
-Отчёт должен состоять ровно из 5 разделов:
+Отчёт состоит из 5 разделов. Структура привязана к цели клиента — все разделы работают на её достижение.
 
-### 1. 🎯 Реализация цели клиента
-Насколько сайт справляется с поставленной задачей? Текущие ключевые метрики. Есть ли прогресс?
+### 1. 👤 Портрет клиента
+Кто приходит на сайт: география, устройство, возраст/пол, источники трафика. Откуда приходят самые ценные посетители? Что они ищут (поисковые фразы)? Таблица: топ-5 сегментов с метриками.
 
-### 2. 📊 Сравнение с рынком
-Как показатели соотносятся с типичными значениями для аналогичных сайтов? Выше/ниже/в норме. Учитывай нишу, тип сайта, масштаб.
+### 2. 🚀 Потенциал бесплатного продвижения
+Какой спрос существует в вашей нише (Wordstat)? Какие запросы вы упускаете? Что видят в поиске конкуренты, а вы — нет? Таблица: топ-10 запросов с частотностью и позицией вашего сайта.
 
-### 3. 🔍 Причины проблем
-Что конкретно тянет вниз? Технические проблемы, контент, UX, источники трафика. Покажи цепочку «симптом → причина».
+### 3. 🎯 Диагностика целевых действий
+Что мешает посетителям совершить нужное действие? Анализ воронки, отказы по страницам, CTA, контент. Сравнение поведенческих метрик по сегментам. Таблица: страницы × отказы × конверсия.
 
-### 4. 💡 Что делать (приоритизировано)
-Список действий от самого важного к наименее важному. Каждый пункт: что сделать + ожидаемый эффект. Не больше 7 пунктов.
+### 4. 📢 Возможности рекламы
+Где и как рекламироваться с максимальной отдалой? Какие каналы уже работают, какие стоит подключить? Оценка потенциала на основе данных о спросе и конкурентах.
 
-### 5. 🧪 Гипотезы для проверки
-3-5 проверяемых гипотез с описанием как их валидировать данными.
+### 5. 📋 Пошаговый план
+Конкретные действия по достижению цели клиента, приоритизированные по влиянию. Каждый пункт: что сделать + ожидаемый эффект + срок. Не больше 7 пунктов.
 
 ## ПРАВИЛА
 - Отчёт КРАТКИЙ — каждый раздел 3-5 предложений + 1-2 таблицы/списка
@@ -808,13 +808,145 @@ def generate_report(data, objective=None, goal=None, token=None, counter_id=None
         json.dump(trace_log, f, ensure_ascii=False, indent=2)
         logger.info(f"Trace dumped to /tmp/deepseek_trace.json ({len(trace_log)} steps)")
 
-    messages.append({"role": "user", "content": "Данных достаточно. Составь финальный отчёт: 5 разделов (🎯 Цель | 📊 Рынок | 🔍 Причины | 💡 Действия ≤7 пунктов | 🧪 Гипотезы 3-5). Каждый раздел 3-5 предложений + 1 таблица. Без воды."})
+    messages.append({"role": "user", "content": "Данных достаточно. Составь финальный отчёт: 5 разделов (👤 Портрет клиента | 🚀 Потенциал продвижения | 🎯 Диагностика целей | 📢 Реклама | 📋 Пошаговый план). Каждый раздел 3-5 предложений + 1 таблица. Привяжи всё к цели клиента. Без воды."})
     try:
         result = _call_deepseek(messages)
-        return result["choices"][0]["message"]["content"]
+        report_text = result["choices"][0]["message"]["content"]
     except Exception as e:
         logger.error(f"DeepSeek final call failed: {e}")
         return f"Ошибка генерации отчёта: {str(e)}"
+
+    # === Validation step ===
+    if project_id:
+        set_agent_step(project_id, max_rounds + 1, "✅ Проверяю качество отчёта...")
+    validation = _validate_report(report_text, goal)
+    logger.info(f"Validation score: {validation['score']}/5, issues: {validation['issues']}")
+
+    if validation['score'] < 4 and validation.get('issues'):
+        # Allow up to 2 more ReAct rounds to gather missing data
+        for retry in range(2):
+            logger.info(f"Report score {validation['score']}/5 — retry {retry+1}/2 with tools")
+            if project_id:
+                set_agent_step(project_id, max_rounds + 2 + retry, f"🔄 Дозапрос данных (попытка {retry+1})...")
+
+            messages.append({"role": "user", "content": f"Отчёт неполный. Проблемы: {'; '.join(validation['issues'])}. Дозапроси нужные данные через инструменты и перепиши отчёт."})
+
+            for _ in range(2):  # up to 2 tool rounds per retry
+                try:
+                    result = _call_deepseek(messages, tools=TOOLS)
+                except Exception as e:
+                    logger.error(f"Validation retry API error: {e}")
+                    break
+
+                msg = result["choices"][0]["message"]
+                messages.append(msg)
+
+                if not msg.get("tool_calls"):
+                    report_text = msg["content"]
+                    break
+
+                # Execute tool calls
+                for tc in msg["tool_calls"]:
+                    tool_name = tc["function"]["name"]
+                    tool_args_str = tc["function"]["arguments"]
+                    log_step(max_rounds + 2 + retry, f"tool:{tool_name}", tool_args_str)
+                    tool_result = _exec_tool(tool_name, tool_args_str)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": json.dumps(tool_result, ensure_ascii=False) if isinstance(tool_result, (dict, list)) else str(tool_result),
+                    })
+
+            # Re-validate
+            validation = _validate_report(report_text, goal)
+            logger.info(f"After retry {retry+1}: score {validation['score']}/5")
+            if validation['score'] >= 4:
+                break
+    else:
+        logger.info(f"Report passed validation ({validation['score']}/5)")
+
+    # Save validation + trace to DB
+    if project_id:
+        try:
+            from app import db as _db
+            _report = Report.query.filter_by(project_id=project_id).order_by(Report.id.desc()).first()
+            if _report:
+                _report.validation_score = validation.get('score', 0)
+                _report.validation_issues = json.dumps(validation.get('issues', []), ensure_ascii=False)
+                _report.agent_trace = json.dumps(trace_log, ensure_ascii=False)
+                _db.session.commit()
+                logger.info(f"Saved validation score={validation.get('score',0)}, trace={len(trace_log)} steps to DB")
+            else:
+                logger.error(f"No report found for project {project_id} in DB")
+        except Exception as e:
+            logger.error(f"Failed to save validation: {e}", exc_info=True)
+
+    return report_text
+
+
+def _validate_report(report_text, goal=""):
+    """Validate report against required structure. Returns score 1-5 and fix prompt."""
+    issues = []
+    score = 5
+
+    required_sections = [
+        ("👤", "Портрет клиента"),
+        ("🚀", "Потенциал продвижения"),
+        ("🎯", "Диагностика целей"),
+        ("📢", "Реклама"),
+        ("📋", "Пошаговый план"),
+    ]
+
+    # Check all 5 sections exist
+    missing = []
+    for emoji, name in required_sections:
+        if emoji not in report_text:
+            missing.append(name)
+    if missing:
+        issues.append(f"Отсутствуют разделы: {', '.join(missing)}")
+        score -= len(missing)
+
+    # Check tables
+    table_count = report_text.count("|---|") + report_text.count("|---|---")
+    if table_count < 2:
+        issues.append("Мало таблиц (минимум 2)")
+        score -= 1
+
+    # Check length
+    if len(report_text) < 2000:
+        issues.append("Отчёт слишком короткий")
+        score -= 1
+
+    # Check for data (numbers)
+    import re
+    numbers = re.findall(r'\d+[\s.,)]', report_text)
+    if len(numbers) < 10:
+        issues.append("Мало конкретных цифр из данных")
+        score -= 1
+
+    # Check goal reference
+    if goal and len(goal) > 20:
+        goal_words = goal.lower().split()[:5]
+        if not any(w in report_text.lower() for w in goal_words if len(w) > 3):
+            issues.append("Отчёт не привязан к цели клиента")
+            score -= 1
+
+    score = max(1, score)
+
+    fix_prompt = None
+    if issues:
+        fix_parts = []
+        if missing:
+            fix_parts.append(f"Добавь отсутствующие разделы: {', '.join(missing)}. Каждый раздел должен иметь заголовок с эмодзи.")
+        if table_count < 2:
+            fix_parts.append("Добавь таблицы с данными (формат markdown)")
+        if len(numbers) < 10:
+            fix_parts.append("Добавь больше конкретных цифр из полученных данных")
+        if goal and len(goal) > 20:
+            fix_parts.append(f"Привяжи рекомендации к цели клиента: {goal[:200]}")
+        fix_prompt = "Отчёт не соответствует требованиям. Исправь:\n\n" + "\n".join(f"- {p}" for p in fix_parts) + "\n\nПерепиши весь отчёт целиком с учётом замечаний."
+
+    return {"score": score, "issues": issues, "fix_prompt": fix_prompt}
 
 
 def chat_with_context(project_id, message, data=None, report_text=None):

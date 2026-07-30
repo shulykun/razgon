@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Razgon — Обратная связь{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:520px;padding:60px 1rem 80px">
+    <h2 style="font-weight:700;margin-bottom:0.5rem">💬 Предложение или запрос</h2>
+    <p style="color:var(--text-secondary);margin-bottom:2rem">Расскажите, что бы вы хотели улучшить или какой запрос отправить</p>
+
+    <div class="mb-3">
+        <input id="fbName" class="form-control chat-input" placeholder="Имя (необязательно)">
+    </div>
+    <div class="mb-3">
+        <input id="fbEmail" class="form-control chat-input" placeholder="Email или телефон (необязательно)">
+    </div>
+    <div class="mb-3">
+        <textarea id="fbMessage" class="form-control chat-input" rows="5" placeholder="Ваше сообщение..."></textarea>
+    </div>
+    <button onclick="sendFeedback()" class="btn btn-accent w-100">Отправить</button>
+    <div id="fbResult" style="margin-top:0.75rem;font-size:0.9rem;text-align:center"></div>
+</div>
+
+<script>
+async function sendFeedback(){
+    const msg=document.getElementById('fbMessage').value.trim();
+    if(!msg){document.getElementById('fbResult').innerHTML='<span style="color:var(--danger)">Напишите сообщение</span>';return;}
+    document.getElementById('fbResult').innerHTML='<span style="color:var(--text-secondary)">Отправка...</span>';
+    try{
+        const r=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('fbName').value,email:document.getElementById('fbEmail').value,message:msg})});
+        const d=await r.json();
+        if(d.ok){
+            document.getElementById('fbResult').innerHTML='<span style="color:var(--success)">✓ Спасибо! Мы свяжемся с вами.</span>';
+            document.getElementById('fbMessage').value='';
+            ym(109713672,'reachGoal','feedback_sent');
+        }else{document.getElementById('fbResult').innerHTML='<span style="color:var(--danger)">Ошибка: '+(d.error||'')+'</span>';}
+    }catch(e){document.getElementById('fbResult').innerHTML='<span style="color:var(--danger)">Ошибка сети</span>';}
+}
+</script>
+{% endblock %}

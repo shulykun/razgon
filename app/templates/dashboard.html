@@ -19,7 +19,7 @@
                         {{ project.created_at.strftime('%d.%m.%Y') }}
                     </p>
                     <div class="d-flex gap-2">
-                        <a href="/project/{{ project.id }}/report" class="btn btn-accent btn-sm">Открыть отчёт</a>
+                        <a href="/project/{{ project.id }}/report" class="btn btn-accent btn-sm" onclick="ym(109713672, 'reachGoal', 'project_open')">Открыть отчёт</a>
                         <button class="btn btn-danger-ghost btn-sm" onclick="deleteProject({{ project.id }}, this)">
                             <i class="bi bi-trash3"></i>
                         </button>

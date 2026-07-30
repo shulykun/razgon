@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Razgon AI — Персональный план развития сайта{% endblock %}
+{% block title %}AI Разгон — Персональный план развития сайта{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/promo_v4.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/promo_v8.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -12,7 +12,7 @@
         <div class="logo-wrap">
             <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Razgon">
         </div>
-        <h1>Razgon AI</h1>
+        <h1>AI Разгон</h1>
         <p class="subtitle">Узнайте, почему ваш сайт теряет трафик — и получите персональный план роста от AI за 10 минут</p>
         <div class="hero-tags-v5">
             <span class="htag">Портрет клиента</span>
@@ -25,7 +25,7 @@
             <li>Укажи цель, к которой стремишься</li>
             <li>Получи план от AI-агента на основе сильных и слабых сторон</li>
         </ul>
-        <a href="{% if session.get('user_id') %}/dashboard{% else %}/auth/login{% endif %}" class="btn-razgon" onclick="ym(109713672, 'reachGoal', 'cta_click')">
+        <a href="/auth/login" class="btn-razgon">
             Получить план <i class="bi bi-arrow-right"></i>
         </a>
     </div>
@@ -152,7 +152,7 @@
     <div class="container">
         <h2>Получите план роста 🚀</h2>
         <p>Подключите Яндекс — получите персональный план за 10 минут</p>
-        <a href="{% if session.get('user_id') %}/dashboard{% else %}/auth/login{% endif %}" class="btn-razgon" onclick="ym(109713672, 'reachGoal', 'cta_click')">
+        <a href="/auth/login" class="btn-razgon">
             Начать бесплатно <i class="bi bi-arrow-right"></i>
         </a>
     </div>
@@ -160,26 +160,6 @@
 
 <!-- Powered by -->
 <div class="powered-v4">
-    Анализирует данные, которые вы уже собираете в Яндекс Метрика
-    <div style="margin-top:1rem">
-        <button onclick="document.getElementById('feedbackForm').style.display=document.getElementById('feedbackForm').style.display==='none'?'':'none'" class="btn btn-sm" style="color:#fff;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05)">💬 Предложение или запрос</button>
-    </div>
-    <div id="feedbackForm" style="display:none;max-width:440px;margin:1rem auto 0;text-align:left">
-        <input id="fbName" class="form-control form-control-sm mb-2" placeholder="Имя (необязательно)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff">
-        <input id="fbEmail" class="form-control form-control-sm mb-2" placeholder="Email (необязательно)" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff">
-        <textarea id="fbMessage" class="form-control form-control-sm mb-2" rows="3" placeholder="Ваше предложение или запрос..." style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff"></textarea>
-        <button onclick="sendFeedback()" class="btn btn-accent btn-sm w-100">Отправить</button>
-        <div id="fbResult" style="margin-top:0.5rem;font-size:0.85rem"></div>
-    </div>
+    Анализирует данные, которые вы уже собираете в Яндекс Метрике
 </div>
-<script>
-async function sendFeedback(){
-    const msg=document.getElementById('fbMessage').value.trim();
-    if(!msg){document.getElementById('fbResult').innerHTML='<span style="color:#ef4444">Напишите сообщение</span>';return;}
-    const r=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('fbName').value,email:document.getElementById('fbEmail').value,message:msg})});
-    const d=await r.json();
-    if(d.ok){document.getElementById('fbResult').innerHTML='<span style="color:#10b981">✓ Спасибо! Мы свяжемся с вами.</span>';document.getElementById('fbMessage').value='';ym(109713672,'reachGoal','feedback_sent');}
-    else{document.getElementById('fbResult').innerHTML='<span style="color:#ef4444">Ошибка</span>';}
-}
-</script>
 {% endblock %}
